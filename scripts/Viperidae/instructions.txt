@@ -1,0 +1,49 @@
+LIT Install Instructions:
+
+1. Place the "vip_cmn" and "vip_lit" folders in the ROOT of your mission folder. If "vip_cmn" already exists, use whichever folder is the latest version.
+2. In the mission's Description.ext, add (or insert, if the classes already exist):
+
+
+	class CfgFunctions {
+
+		#include "vip_cmn\fn\vip_cmn_fnc.hpp"
+		#include "vip_lit\fn\vip_lit_fnc.hpp"
+	};
+
+	class CfgSounds {
+
+		#include "vip_lit\resource\vip_lit_cfgSounds.hpp"
+	};
+
+3. If using the flashlight feature, drag the "flashlight.paa" (red or white) you want from "/flashlight/white" or "/flashlight/red" into "/vip_lit/resource".
+
+4. In init.sqf, or in the init line of an editor object, add the line:
+
+	[] execVM "vip_lit\vip_lit_init.sqf";
+
+You can leave the input array blank for the default values, or customise your usage:
+
+	0: Bool; whether to leave these scripts on after player dies; default false.
+	1: Map Subtractions Array (leave empty to disable):
+		0: Bool; whether to remove "Show player on map" button; default true.
+		1: Bool; whether to remove and disable map textures; default true.
+		2: Bool; whether to remove cursor grid ref; default true.
+		3: Bool; whether to use alternative cursor type; default true.
+	2: Map Additions Array (leave empty to disable): 
+		0: Scalar: flashlight size to use (0 = normal, 1 = large); default 0.
+		1: Bool: whether to enable NVG on map; default true.
+		2: Bool: whether player starts with flashlight item; default true.
+	3: NVG Array (leave empty to disable):
+		0: Array (leave empty to disable):
+			0: Scalar; max viewdistance of NVG; default 1000.
+		1: Bool; whether to enable NVG grain; default true.
+		2: Bool; whether to turn off NVG when using non-collimator optics; default true.
+
+Examples:
+
+	Remove on respawn, enable Map Subtractions, and nothing else: 
+		[false, [true, true, true, true], [], []] execVM "vip_lit\vip_lit_init.sqf";
+	Don't remove on respawn, no Map Subtractions, no Map Additions, NVG grain and optics only:
+		[true, [], [], [[], true, true]] execVM "vip_lit\vip_lit_init.sqf";
+
+5. Done!

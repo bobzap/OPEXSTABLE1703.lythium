@@ -1,0 +1,19 @@
+﻿if (worldName != "tem_kujari") exitWith {};
+
+OPEX_mapRadius = worldSize / 2;
+OPEX_mapCenter = [OPEX_mapRadius, OPEX_mapRadius, 0];
+OPEX_mapRegion = "africa";
+OPEX_mapCountry = "STR_mali";
+OPEX_mapLocality = "STR_kujari";
+OPEX_mapLocalityInside = "STR_kujariIn";
+OPEX_mapClimate = "arid";
+OPEX_mapEnemy = "BOKO";
+OPEX_mapNationalities = ["STR_mali", "STR_mali", "STR_mali", "STR_mali"," STR_mali", "STR_cameroon", "STR_nigeria", "STR_nigeria", "STR_nigeria", "STR_somalia", "STR_kenya", "STR_sudan"];
+OPEX_mapLanguage = "french";
+OPEX_mapWater = false;
+OPEX_locations_safe = [];
+OPEX_locations_isolated = [];
+OPEX_locations_villages = [];
+OPEX_locations_cities = [];
+OPEX_locations_industrial = [];
+OPEX_locations_military = [];

@@ -1,0 +1,883 @@
+﻿// =========================================================================================================
+// GENERAL SETTINGS
+// =========================================================================================================
+
+	class Header
+		{
+			gameType = Coop;
+			minPlayers = 1;
+			maxPlayers = 50;
+		};
+
+	author = $STR_author;
+	onLoadName = $STR_onLoadName;
+	onLoadIntro = $STR_onLoadIntro;
+	onLoadIntroTime = 0;
+	onLoadMission = $STR_onLoadMission;
+	onLoadMissionTime = 0;
+	loadScreen = "pictures\overview.paa";
+	overviewText = $STR_overview;
+	overviewPicture	= "pictures\overview.paa";
+	//overviewPicture = "\a3\Missions_F_gamma\data\img\mp_coop_m03_overview_ca.paa";
+	briefingName = $STR_onLoadName;
+
+	briefing = 0;
+	debriefing = 1;
+	//disableChannels[] = {0,1,2,3,4,5,6};
+	DisabledAI = 1;			// <!-- Where 0 Fills empty playable slots with AI, 1 is They Don't fill the empty slots
+	joinUnassigned = 1;		// <!-- Where 0 forces joining players into the first empty slot, 1 leaves them to select their own
+	enableDebugConsole = 1;		// <!-- Enable the debug console where (0=disabled),(1=Admins Only),(2=Everyone) DO NOT SET AS 2!
+
+
+	respawn = "BASE";
+	respawnButton = 1;
+	respawnDelay = 15;
+	respawnVehicleDelay = 5;
+	respawnDialog = 0;
+	respawnOnStart = -1;
+
+	ReviveMode = 0;                         //0: disabled, 1: enabled, 2: controlled by player attributes
+	ReviveUnconsciousStateMode = 0;         //0: basic, 1: advanced, 2: realistic
+	ReviveRequiredTrait = 0;                //0: none, 1: medic trait is required
+	ReviveRequiredItems = 1;                //0: none, 1: medkit, 2: medkit or first aid kit
+	ReviveRequiredItemsFakConsumed = 1;     //0: first aid kit is not consumed upon revive, 1: first aid kit is consumed
+	ReviveDelay = 60;                       //time needed to revive someone (in secs)
+	ReviveMedicSpeedMultiplier = 4;         //speed multiplier for revive performed by medic
+	ReviveForceRespawnDelay = 10;           //time needed to perform force respawn (in secs)
+	ReviveBleedOutDelay = 180;              //unconscious state duration (in secs)
+	respawnTemplates[] = {"MenuPosition"};
+
+	enablePlayerAddRespawn = 1;
+
+	corpseManagerMode = 0;
+	wreckManagerMode = 0;
+
+	// GETTING ALL VARIABLES FOR PROFILENAMESPACE (REQUIRED FOR MP BECAUSE "ALLVARIABLES PROFILENAMESPACE" COMMAND DOESN'T WORK IN MP)
+	//__EXEC(OPEX_storedVariables = allVariables profileNamespace)
+
+	#include "scripts\Gemini\hpp_defines.hpp"
+	#include "scripts\Gemini\hpp_needsManager.hpp"
+	#include "scripts\Gemini\hpp_taskManager.hpp"
+	#include "scripts\Gemini\hpp_dialog_params.hpp"
+	#include "scripts\Gemini\hpp_dialog_buySupplies.hpp"
+	#include "scripts\Gemini\hpp_dialog_buySupports.hpp"
+	#include "scripts\Gemini\hpp_dialog_buyUnits.hpp"
+	#include "scripts\Gemini\hpp_dialog_buyVehicles.hpp"
+	#include "scripts\Gemini\hpp_dialog_vehicleMusicReceiver.hpp"
+	#include "scripts\Gemini\hpp_civilianInteractions.hpp"
+	#include "scripts\Gemini\hpp_identities.hpp"
+	#include "scripts\Gemini\hpp_insignas.hpp"
+
+	#include "scripts\R3F\LOG\desc_include.h"
+	#include "scripts\Tonic\VVS\menu.h"
+	#include "scripts\Psychobastard\AIS\Effects\BarDlg.hpp"
+	#include "scripts\AFAR\ui\defines.hpp"
+	#include "scripts\AFAR\ui\dialogs.hpp"
+
+	//class CfgTitles {#include "scripts\AFAR\ui\titles.hpp"};
+
+// =========================================================================================================
+// FUNCTIONS SETTINGS
+// =========================================================================================================
+
+
+	class CfgRemoteExec
+		{
+	        class Functions
+		        {
+		                mode = 2;
+		                allowedTargets = 0;
+		                jip = 1;
+		        };
+	        class Commands
+		        {
+		                mode = 2;
+		                allowedTargets = 0;
+		                jip = 1;
+		        };
+		};
+
+	class cfgFunctions
+		{
+			#include "scripts\Gemini\hpp_functions.hpp"
+			#include "scripts\CBA3\hpp_functions.hpp"
+			#include "scripts\Viperidae\vip_cmn\fn\vip_cmn_fnc.hpp"
+			#include "scripts\Viperidae\vip_lit\fn\vip_lit_fnc.hpp"
+			#include "scripts\Tonic\VVS\Functions.h"
+			#include "scripts\Psychobastard\AIS\cfgFunctions.hpp"
+		};
+
+// =========================================================================================================
+// DEBRIEFING SETTINGS
+// =========================================================================================================
+
+	class CfgDebriefing
+		{
+			class End1
+				{
+					title = "$STR_debriefing_mainTitle";
+					subtitle = "$STR_debriefing_subTitle";
+					pictureBackground = "\a3\Missions_F_gamma\data\img\mp_coop_m03_overview_ca.paa";
+					description = "$STR_debriefing_description";
+					pictureColor[] = {0.0,0.3,0.6,1};
+				};
+			class missionResetted
+				{
+					title = "$STR_debriefing_missionResetted_title";
+					subtitle = "$STR_debriefing_missionResetted_subtitle";
+					pictureBackground = "\a3\Missions_F_gamma\data\img\mp_coop_m03_overview_ca.paa";
+					description = "$STR_debriefing_missionResetted_description";
+					pictureColor[] = {0.0,0.3,0.6,1};
+				};
+			class missionUpdated
+				{
+					title = "$STR_debriefing_missionUpdated_title";
+					subtitle = "$STR_debriefing_missionUpdated_subtitle";
+					pictureBackground = "\a3\Missions_F_gamma\data\img\mp_coop_m03_overview_ca.paa";
+					description = "$STR_debriefing_missionUpdated_description";
+					pictureColor[] = {0.0,0.3,0.6,1};
+				};
+		};
+
+// =========================================================================================================
+// MUSIC SETTINGS
+// =========================================================================================================
+
+	class CfgMusic
+		{
+			tracks[]={};
+
+			class OPEX_intro
+				{
+					name = "OPEX_intro";
+					sound[] = {"\sounds\musics\OPEX_intro.ogg", db+10, 1.0};
+				};
+		};
+
+// =========================================================================================================
+// SOUNDS SETTINGS
+// =========================================================================================================
+
+	class CfgSounds
+		{
+
+			sounds[] = {};
+
+			#include "scripts\Viperidae\vip_lit\resource\vip_lit_cfgSounds.hpp"
+			#include "scripts\AFAR\f\SFX.hpp"
+
+			class AllahuAkbar_1
+				{
+					name = "AllahuAkbar_1";
+					sound[] = {"\sounds\voices\AllahuAkbar_1.ogg", 0.75, 1};
+					titles[] = {1, "ALLAHU AKBAR !!!"};
+				};
+			class AllahuAkbar_2
+				{
+					name = "AllahuAkbar_2";
+					sound[] = {"\sounds\voices\AllahuAkbar_2.ogg", 0.75, 1};
+					titles[] = {1, "ALLAHU AKBAR !!!"};
+				};
+
+			class scream_1
+				{
+					name = "scream_1";
+					sound[] = {"\sounds\voices\scream_1.ogg", 0.65, 1};
+					titles[] = {1, ""};
+				};
+			class scream_2
+				{
+					name = "scream_2";
+					sound[] = {"\sounds\voices\scream_2.ogg", 0.65, 1};
+					titles[] = {1, ""};
+				};
+			class scream_3
+				{
+					name = "scream_3";
+					sound[] = {"\sounds\voices\scream_3.ogg", 0.65, 1};
+					titles[] = {1, ""};
+				};
+
+			class arti_incoming
+				{
+					name = "arti_incoming";
+					sound[] = {"\sounds\sfx\arti_incoming.ogg", 1, 1};
+					titles[] = {1, ""};
+				};
+
+			class rumble
+				{
+					name = "rumble";
+					sound[] = {"\sounds\sfx\rumble.ogg", 1, 1};
+					titles[] = {1, ""};
+				};
+
+			class yawn
+				{
+					name = "yawn";
+					sound[] = {"\sounds\sfx\yawn.ogg", 0.75, 1};
+					titles[] = {1, ""};
+				};
+
+			class eating
+				{
+					name = "eating";
+					sound[] = {"\sounds\sfx\eating.ogg", 1, 1};
+					titles[] = {1, ""};
+				};
+
+			class drinking
+				{
+					name = "drinking";
+					sound[] = {"\sounds\sfx\drinking.ogg", 1, 1};
+					titles[] = {1, ""};
+				};
+
+			class cabletie_clamp
+				{
+					name = "cabletie_clamp";
+					sound[] = {"\sounds\sfx\cabletie_clamp.ogg", 0.65, 1};
+					titles[] = {1, ""};
+				};
+
+			class cabletie_cut
+				{
+					name = "cabletie_cut";
+					sound[] = {"\sounds\sfx\cabletie_cut.ogg", 0.65, 1};
+					titles[] = {1, ""};
+				};
+
+			class office
+				{
+					name = "office";
+					sound[] = {"\sounds\sfx\office.ogg", 10.00, 1, 15};
+					titles[] = {1, ""};
+				};
+
+			class radioChatter
+				{
+					name = "radioChatter";
+					sound[] = {"\sounds\sfx\radioChatter.ogg", 5.00, 1, 15};
+					titles[] = {1, ""};
+				};
+
+			class medicalCenter
+				{
+					name = "medicalCenter";
+					sound[] = {"\sounds\sfx\medicalCenter.ogg", 10.00, 1, 10};
+					titles[] = {1, ""};
+				};
+
+			class canteen
+				{
+					name = "canteen";
+					sound[] = {"\sounds\sfx\canteen.ogg", 10.00, 1, 10};
+					titles[] = {1, ""};
+				};
+
+			class workshop
+				{
+					name = "workshop";
+					sound[] = {"\sounds\sfx\workshop.ogg", 5.00, 1, 10};
+					titles[] = {1, ""};
+				};
+
+			class shower
+				{
+					name = "shower";
+					sound[] = {"\sounds\sfx\shower.ogg", 5.00, 1, 10};
+					titles[] = {1, ""};
+				};
+
+			class dog_bark1
+				{
+					name = "dog_bark1";
+					sound[] = {"\sounds\sfx\dog_bark1.ogg", 10.00, 1, 10};
+					titles[] = {1, ""};
+				};
+			class dog_bark2
+				{
+					name = "dog_bark2";
+					sound[] = {"\sounds\sfx\dog_bark2.ogg", 10.00, 1, 10};
+					titles[] = {1, ""};
+				};
+			class dog_bark3
+				{
+					name = "dog_bark3";
+					sound[] = {"\sounds\sfx\dog_bark3.ogg", 10.00, 1, 10};
+					titles[] = {1, ""};
+				};
+			class dog_pant
+				{
+					name = "dog_pant";
+					sound[] = {"\sounds\sfx\dog_pant.ogg", 3.00, 1, 10};
+					titles[] = {1, ""};
+				};
+			class dog_whimper
+				{
+					name = "dog_whimper";
+					sound[] = {"\sounds\sfx\dog_whimper.ogg", 3.00, 1, 10};
+					titles[] = {1, ""};
+				};
+		};
+
+// =========================================================================================================
+// SUPPORT SETTINGS
+// =========================================================================================================
+
+	class CfgCommunicationMenu
+		{
+			class OPEX_support_suppliesDrop
+				{
+					text = $STR_OPEX_support_suppliesDrop; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_suppliesDrop.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\supplydrop_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+			class OPEX_support_vehicleDrop
+				{
+					text = $STR_OPEX_support_vehicleDrop; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_vehicleDrop.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\supplydrop_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+
+			class OPEX_support_airStrike
+				{
+					text = $STR_OPEX_support_airStrike; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_airStrike.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\cas_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+
+			class OPEX_support_artilleryStrike
+				{
+					text = $STR_OPEX_support_artilleryStrike; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_artilleryStrike.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\artillery_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+
+			class OPEX_support_airAssistance
+				{
+					text = $STR_OPEX_support_airAssistance; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_airAssistance.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\defend_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+
+			class OPEX_support_landAssistance
+				{
+					text = $STR_OPEX_support_landAssistance; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_landAssistance.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\defend_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+
+			class OPEX_support_transport
+				{
+					text = $STR_OPEX_support_transport; // Text displayed in the menu and in a notification
+					submenu = ""; // Submenu opened upon activation (expression is ignored when submenu is not empty.)
+					expression = "[_this select 0] execVM 'supports\support_transport.sqf'"; // Code executed upon activation
+					icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\transport_ca.paa"; // Icon displayed permanently next to the command menu
+					cursor = "\a3\Ui_f\data\IGUI\Cfg\Cursors\iconCursorSupport_ca.paa"; // Custom cursor displayed when the item is selected
+					enable = "1"; // Simple expression condition for enabling the item
+					removeAfterExpressionCall = 0; // 1 to remove the item after calling
+				};
+	};
+
+// =========================================================================================================
+// RESOURCES
+// =========================================================================================================
+
+	class RscPicturePerso
+		{
+				idc = -1;
+				type = CT_STATIC;
+				style = ST_PICTURE;
+				font = PuristaSemibold;
+				colorBackground[] = {0,0,0,0};
+				colorText[] = {1,1,1,1};
+				sizeEx = 0.02;
+		};
+
+	class RscTypePerso
+		{
+				idd = -1;
+				movingEnable = 0;
+				duration = 1;
+				fadeIn = 2;
+				fadeOut = 2;
+		};
+
+	class Text
+		{
+			type=0;
+			idc=-1;
+			style=2 + 512;
+			lineSpacing=1.000000;
+			h=0.040000;
+			colorBackground[]={0,0,0,0};
+			colorText[]={0.50000,0.50000,0.50000,0.750000};
+			font= PuristaMedium;
+			sizeEx=0.07;
+		};
+
+	class MainTitle: Text
+		{
+			style = 16 + 0 + 512 + 2;
+			lineSpacing = 1.0;
+			x = 0;
+			y = 0.28;
+			w = 1.0;
+			h = 0.4;
+			colorText[] = {1, 1, 1, 1.0};
+			font = PuristaBold;
+			sizeEx=0.17;
+		};
+
+	class expTitle: Text
+		{
+			style = 16 + 0 + 512 + 2;
+			lineSpacing = 1.0;
+			x = 0.33;
+			y = 0.30;
+			w = 1.0;
+			h = 0.4;
+			colorText[] = {1, 1, 1, 1.0};
+			font = PuristaBold;
+			sizeEx=0.05;
+		};
+
+	class SubTitle: Text
+		{
+			style = 16 + 0 + 512 + 2;
+			lineSpacing = 1.0;
+			x = 0;
+			y = 0.52;
+			w = 1.0;
+			h = 0.4;
+			colorText[] = {1.0, 1.0, 1.0, 1.0};
+			font = PuristaBold;
+			sizeEx=0.1;
+		};
+
+	class RscTitles
+		{
+
+			// INTRO TITLES
+
+			   titles[] = {"author", "presents", "presentation", "presentationSplash", "OPEX"};
+
+				#include "scripts\AFAR\ui\titles.hpp"
+				
+				class author: Text
+					{
+						style = 16 + 0 + 512 + 2;
+						lineSpacing = 1.0;
+						x = 0;
+						y = 0.38;
+						w = 1.0;
+						h = 0.4;
+						colorText[] = {1, 1, 1, 1.0};
+						font = PuristaBold;
+						sizeEx=0.1;
+					};
+
+				class presents: Text
+					{
+						style = 16 + 0 + 512 + 2;
+						lineSpacing = 1.0;
+						x = 0;
+						y = 0.48;
+						w = 1.0;
+						h = 0.4;
+						colorText[] = {1, 1, 1, 1.0};
+						font = PuristaMedium;
+						sizeEx=0.05;
+					};
+
+				class presentation
+					{
+						name = "presentationSplash";
+						duration = 0;
+						fadein = 2;
+						fadeout = 2;
+						idd = -1;
+						movingEnable = false;
+						controls[]= {text1,text2};
+					};
+
+				class presentationSplash : presentation
+					{
+						class text1: author {text = "$STR_intro_author";};
+						class text2: presents {text = "$STR_intro_presents";};
+					};
+				class OPEX_default : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_default.paa";
+							};
+					};
+				class OPEX_europe : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_europe.paa";
+							};
+					};
+				class OPEX_france : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_france.paa";
+							};
+					};
+				class OPEX_usa : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_usa.paa";
+							};
+					};
+				class OPEX_russia : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_russia.paa";
+							};
+					};
+				class OPEX_spain : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_spain.paa";
+							};
+					};
+				class OPEX_uk : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_uk.paa";
+							};
+					};
+				class OPEX_germany : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_germany.paa";
+							};
+					};
+				class OPEX_czechia : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_czechia.paa";
+							};
+					};
+				class OPEX_canada : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_canada.paa";
+							};
+					};
+				class OPEX_italy : RscTypePerso
+					{
+							controls[] = {"image1"};
+							duration = 2;
+							fadein = 2;
+							fadeout = 2;
+
+							class image1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.1;
+									y = 0.0;
+									w = 0.8;
+									h = 1.0;
+									text = "pictures\opex_italy.paa";
+							};
+					};					
+			// IN MEMORIAM
+
+				class inmemoriam: Text
+					{
+						style = 16 + 0 + 512 + 2;
+						lineSpacing = 1.0;
+						x = 0;
+						y = 0.45;
+						w = 1.0;
+						h = 0.4;
+						colorText[] = {1, 1, 1, 1.0};
+						font = RobotoCondensedLight;
+						sizeEx=0.05;
+					};
+
+				class Faiavan : RscTypePerso
+					{
+							name = "inmemoriam_faiavan";
+							//controls[]= {text1, "picture1"};
+							controls[]= {text1};
+							duration = 0;
+							fadein = 2;
+							fadeout = 2;
+
+							class picture1: RscPicturePerso
+							{
+									style = 2096;
+									x = 0.4;
+									y = 0.56;
+									w = 0.2;
+									h = 0.25;
+									text = "pictures\faiavan.jpg";
+							};
+					};
+
+				class inmemoriam_faiavan : Faiavan
+					{
+						class text1: inmemoriam {text = "$STR_intro_inmemoriam_faiavan";};
+					};
+
+
+
+	// TPW HUD
+
+		class TPW_HUD_TXT
+			{
+			type = 13;
+			idc = -1;
+			style=0x00;
+			colorbackground[] = {0,0,0,0};
+			colortext[] = {0,1,0,0.5};
+			size = "0.03 / (getResolution select 5)";
+			h = 0.5;
+			w = 0.5;
+			text = "";
+			class Attributes
+				{
+				font = PuristaSemibold;
+				color = "#000000";
+				align = "left";
+				valign = "middle";
+				shadow = false;
+				shadowColor = "#ff0000";
+				size = "1";
+				};
+			};
+
+		class TPW_HUD_DIALOG
+			{
+			onLoad = "uiNamespace setVariable ['TPW_HUD_DISPLAY', _this select 0];";
+			idd = -1;
+			movingenable = 0;
+			enablesimulation = 1;
+			controlsbackground[] = {};
+			access = 0;
+			duration = 1e+1000;
+			fadeIn = 0;
+			fadeOut = 0;
+			objects[] = {};
+			controls[] =
+				{
+				TPW_HUD_TXT_1,
+				TPW_HUD_TXT_2,
+				TPW_HUD_TXT_3,
+				TPW_HUD_TXT_4,
+				TPW_HUD_TXT_5,
+				TPW_HUD_TXT_6,
+				TPW_HUD_TXT_7,
+				TPW_HUD_TXT_8,
+				TPW_HUD_TXT_9
+				};
+
+			class TPW_HUD_TXT_1 : TPW_HUD_TXT
+				{
+				idc = 100001;
+				x = 0.38 * safezoneW + safezoneX;
+				y = 0.4 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_2 : TPW_HUD_TXT
+				{
+				idc = 100002;
+				x = 0.48 * safezoneW + safezoneX;
+				y = 0.4 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_3 : TPW_HUD_TXT
+				{
+				idc = 100003;
+				x = 0.58 * safezoneW + safezoneX;
+				y = 0.4 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_4 : TPW_HUD_TXT
+				{
+				idc = 100004;
+				x = 0.38 * safezoneW + safezoneX;
+				y = 0.5 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_5 : TPW_HUD_TXT
+				{
+				idc = 100005;
+				x = 0.48 * safezoneW + safezoneX;
+				y = 0.5 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_6 : TPW_HUD_TXT
+				{
+				idc = 100006;
+				x = 0.58 * safezoneW + safezoneX;
+				y = 0.5 * safezoneW + safezoneX;
+				text = "";
+				};
+
+			class TPW_HUD_TXT_7 : TPW_HUD_TXT
+				{
+				idc = 100007;
+				x = 0.38 * safezoneW + safezoneX;
+				y = 0.6 * safezoneW + safezoneX;
+				text = "";
+				};
+			class TPW_HUD_TXT_8 : TPW_HUD_TXT
+				{
+				idc = 100008;
+				x = 0.48 * safezoneW + safezoneX;
+				y = 0.6 * safezoneW + safezoneX;
+				text = "";
+				};
+			class TPW_HUD_TXT_9 : TPW_HUD_TXT
+				{
+				idc = 100009;
+				x = 0.58 * safezoneW + safezoneX;
+				y = 0.6 * safezoneW + safezoneX;
+				text = "";
+				};
+			};
+	};

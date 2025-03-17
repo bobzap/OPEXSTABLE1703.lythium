@@ -1,0 +1,19 @@
+﻿if (worldName != "enoch") exitWith {};
+
+OPEX_mapRadius = worldSize / 2;
+OPEX_mapCenter = [OPEX_mapRadius, OPEX_mapRadius, 0];
+OPEX_mapRegion = "europe";
+OPEX_mapCountry = "STR_poland";
+OPEX_mapLocality = "STR_livonia";
+OPEX_mapLocalityInside = "STR_livoniaIn";
+OPEX_mapClimate = "continental";
+OPEX_mapEnemy = "ULTRA";
+OPEX_mapNationalities = ["STR_poland"];
+OPEX_mapLanguage = "greek";
+OPEX_mapWater = false;
+OPEX_locations_safe = [];
+OPEX_locations_isolated = [];
+OPEX_locations_villages = [];
+OPEX_locations_cities = [];
+OPEX_locations_industrial = [];
+OPEX_locations_military = [];

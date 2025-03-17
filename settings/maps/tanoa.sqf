@@ -1,0 +1,19 @@
+﻿if (worldName != "tanoa") exitWith {};
+
+OPEX_mapRadius = worldSize / 2;
+OPEX_mapCenter = [OPEX_mapRadius, OPEX_mapRadius, 0];
+OPEX_mapRegion = "pacific";
+OPEX_mapCountry = "STR_guiana";
+OPEX_mapLocality = "STR_tanoa";
+OPEX_mapLocalityInside = "STR_tanoaIn";
+OPEX_mapClimate = "tropical";
+OPEX_mapEnemy = "ULTRA";
+OPEX_mapNationalities = ["STR_france", "STR_france"," STR_suriname", "STR_brazil", "STR_guyana"];
+OPEX_mapLanguage = "englishFR";
+OPEX_mapWater = true;
+OPEX_locations_safe = [];
+OPEX_locations_isolated = [];
+OPEX_locations_villages = [];
+OPEX_locations_cities = [];
+OPEX_locations_industrial = [];
+OPEX_locations_military = [];

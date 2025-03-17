@@ -1,0 +1,1 @@
+﻿BIS_fps_rescanNewObjects = true;

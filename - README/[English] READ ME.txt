@@ -1,0 +1,10 @@
+﻿****************
+OPEX - by GEMINI
+****************
+
+For any information (installation guide, changelog, thanks etc...), feedback and suggestion please visit:
+   - my dedicated topic on Bohemia Interactive's forums: https://forums.bohemia.net/forums/topic/194070-opex/
+   - OPEX webpages on Steam: http://steamcommunity.com/workshop/filedetails/?id=908003375
+   - my personnal website: http://gemini.69.free.fr/en
+   
+Or contact me directly by eMail at gemini.69@free.fr

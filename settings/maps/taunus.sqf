@@ -1,0 +1,19 @@
+﻿if (worldName != "xcam_taunus") exitWith {};
+
+OPEX_mapRadius = worldSize / 2;
+OPEX_mapCenter = [OPEX_mapRadius, OPEX_mapRadius, 0];
+OPEX_mapRegion = "europe";
+OPEX_mapCountry = "STR_europe";
+OPEX_mapLocality = "STR_taunus";
+OPEX_mapLocalityInside = "STR_taunusIn";
+OPEX_mapClimate = "continental";
+OPEX_mapEnemy = "ULTRA";
+OPEX_mapNationalities = ["STR_switzerland", "STR_switzerland", "STR_austria", "STR_austria", "STR_germany", "STR_germany", "STR_italy", "STR_croatia", "STR_serbia"];
+OPEX_mapLanguage = "russian";
+OPEX_mapWater = false;
+OPEX_locations_safe = [];
+OPEX_locations_isolated = [];
+OPEX_locations_villages = [];
+OPEX_locations_cities = [];
+OPEX_locations_industrial = [];
+OPEX_locations_military = [];

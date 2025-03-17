@@ -1,0 +1,28 @@
+﻿******************************************************************
+*******************R3F_AiComTarget********************************
+********************version : 1.00********************************
+******************************************************************
+** Author : ~R3F~ Mapoule                                        *
+** team-r3f.org                                                  *
+**                                                               *
+** Merci à Madbull pour les trucs & astuces  .... ;)             *
+** Merci aux membres du R3F.                                     *
+**                                                               *
+** Installation :                                                *
+**                                                               *
+** 1 - Copier le dossier "R3F_AiComTarget" à la racine de        *
+**   la mission.                                                 *
+** 2 - Mettre la ligne ci dessous dans le fichier init.sqf       *
+**   execVM "R3F_AiComTarget\init.sqf";                          *
+**                                                               *
+******************************************************************
+******************************************************************
+
+
+
+
+ 
+
+ 
+ 
+
