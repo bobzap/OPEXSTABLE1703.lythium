@@ -626,3 +626,368 @@ Gemini_fnc_getRandomMissionForState = {
     
     _missionFunction
 };
+
+// Ajouter dans fnc_territoryMissions.sqf
+
+// DÉTECTION D'ENTRÉE EN TERRITOIRE ENNEMI
+Gemini_fnc_monitorPlayerInEnemyTerritory = {
+    if (!isServer) exitWith {
+        diag_log "[TERRITOIRE] Fonction monitor annulée: n'est pas serveur";
+    };
+    
+    diag_log "[TERRITOIRE] Fonction monitorPlayerInEnemyTerritory démarrée";
+    
+    [] spawn {
+        diag_log "[TERRITOIRE] Spawn de surveillance territorial démarré";
+        while {true} do {
+            diag_log "[TERRITOIRE] Vérification des joueurs en territoire ennemi...";
+            diag_log format ["[TERRITOIRE] Nombre de joueurs: %1", count allPlayers];
+            diag_log format ["[TERRITOIRE] Nombre de territoires: %1", count OPEX_territories];
+            
+            // Utiliser allPlayers au lieu de OPEX_playingPlayers
+            {
+                private _player = _x;
+                private _playerPos = position _player;
+                private _playerName = name _player;
+                diag_log format ["[TERRITOIRE] Vérification du joueur %1 à position %2", _playerName, _playerPos];
+                
+                private _inEnemyTerritory = false;
+                private _territoryIndex = -1;
+                
+                // Vérifier si le joueur est dans un territoire ennemi
+                {
+                    private _territoryData = _x;
+                    private _name = _territoryData select 0;
+                    private _position = _territoryData select 1;
+                    private _radius = _territoryData select 2;
+                    private _state = _territoryData select 3;
+                    
+                    diag_log format ["[TERRITOIRE] Vérification territoire %1 (%2) - distance %3 m - rayon %4 m", 
+                        _name, _state, (_playerPos distance _position), _radius];
+                    
+                    if ((_playerPos distance _position) < _radius && _state == "enemy") exitWith {
+                        _inEnemyTerritory = true;
+                        _territoryIndex = _forEachIndex;
+                        diag_log format ["[TERRITOIRE] Joueur %1 TROUVÉ en territoire hostile: %2", _playerName, _name];
+                    };
+                } forEach OPEX_territories;
+                
+                // Si le joueur est dans un territoire ennemi, offrir la mission
+                if (_inEnemyTerritory && _territoryIndex != -1) then {
+                    private _territoryData = OPEX_territories select _territoryIndex;
+                    private _name = _territoryData select 0;
+                    
+                    // Notification directe
+                    systemChat format ["Territoire hostile: %1", _name];
+                    
+                    // Vérifier si une mission est déjà en cours pour ce territoire
+                    private _taskID = format ["liberate_%1", _territoryIndex];
+                    diag_log format ["[TERRITOIRE] Vérification si tâche %1 existe déjà", _taskID];
+                    
+                    private _taskExists = [_taskID] call BIS_fnc_taskExists;
+                    diag_log format ["[TERRITOIRE] Tâche existe: %1", _taskExists];
+                    
+                    if (!_taskExists) then {
+                        diag_log "[TERRITOIRE] Offre de mission de libération";
+                        // Proposer mission de libération
+                        ["globalChat", format["Vous êtes entré dans un territoire hostile: %1", _name]] remoteExec ["Gemini_fnc_globalChat", _player];
+                        
+                        // Offrir la mission avec délai pour éviter spam
+                        if (isNil {_player getVariable "lastLiberationOffer"} || 
+                            {time - (_player getVariable "lastLiberationOffer") > 300}) then {
+                            
+                            _player setVariable ["lastLiberationOffer", time];
+                            diag_log format ["[TERRITOIRE] Préparation d'offre de mission pour %1", _playerName];
+                            
+                            [_player, _territoryIndex] spawn {
+                                params ["_unit", "_idx"];
+                                diag_log format ["[TERRITOIRE] Délai avant offre de mission pour index %1", _idx];
+                                
+                                // Attendre un peu avant d'offrir la mission
+                                sleep 5;
+                                
+                                // Vérifier si joueur toujours dans le territoire
+                                private _territoryData = OPEX_territories select _idx;
+                                private _position = _territoryData select 1;
+                                private _radius = _territoryData select 2;
+                                private _distance = _unit distance _position;
+                                
+                                diag_log format ["[TERRITOIRE] Après délai - Joueur à %1m du centre (rayon %2m)", _distance, _radius];
+                                
+                                if (_distance < _radius) then {
+                                    // Offrir mission de libération
+                                    diag_log format ["[TERRITOIRE] Exécution de la mission de libération pour territoire %1", _idx];
+                                    [_idx] remoteExec ["Gemini_fnc_offerLiberationMission", 2];
+                                    systemChat "Mission de libération offerte!";
+                                } else {
+                                    diag_log "[TERRITOIRE] Joueur sorti du territoire - mission annulée";
+                                };
+                            };
+                        } else {
+                            diag_log "[TERRITOIRE] Mission récemment offerte - attente du délai";
+                        };
+                    } else {
+                        diag_log "[TERRITOIRE] Mission déjà en cours pour ce territoire";
+                    };
+                };
+            } forEach allPlayers;
+            
+            sleep 10; // Vérification périodique
+        };
+    };
+};
+
+
+
+// MISSION DE NETTOYAGE - ÉLIMINER LES ENNEMIS
+Gemini_fnc_clearAreaMission = {
+    params ["_territoryIndex"];
+    
+    private _territoryData = OPEX_territories select _territoryIndex;
+    private _locationName = _territoryData select 0;
+    private _position = _territoryData select 1;
+    private _radius = _territoryData select 2;
+    
+    // Créer la tâche
+    private _taskID = format ["clear_%1", _territoryIndex];
+    private _taskDesc = format ["Éliminez toutes les forces ennemies à %1 pour sécuriser la zone.", _locationName];
+    private _taskTitle = format ["Nettoyage: %1", _locationName];
+    
+    [
+        OPEX_friendly_side1,
+        _taskID,
+        [_taskDesc, _taskTitle, ""],
+        _position,
+        "CREATED",
+        1,
+        true,
+        "attack"
+    ] call BIS_fnc_taskCreate;
+    
+    // Spawn d'ennemis pour la mission (1-3 groupes)
+    private _groupsCount = 1 + floor(random 2);
+    
+    for "_i" from 1 to _groupsCount do {
+        [OPEX_enemy_side1, ["infantry"], [2, 4], _position, [10, _radius * 0.8], "defend", _position, OPEX_enemy_AIskill, 100, "task"] call Gemini_fnc_spawnSquad;
+    };
+    
+    // Vérification de la tâche
+    [_taskID, _territoryIndex, _position, _radius] spawn {
+        params ["_taskID", "_territoryIndex", "_position", "_radius"];
+        
+        waitUntil {
+            sleep 10;
+            // Compter les ennemis vivants dans la zone
+            private _enemiesAlive = {alive _x && side _x == OPEX_enemy_side1} count (_position nearEntities ["Man", _radius]);
+            _enemiesAlive == 0
+        };
+        
+        // Tâche accomplie
+        [_taskID, "SUCCEEDED"] call BIS_fnc_taskSetState;
+        
+        // Augmenter sécurité et réputation
+        private _territoryData = OPEX_territories select _territoryIndex;
+        private _newSecurity = ((_territoryData select 4) + 20) min 100;
+        [_territoryIndex, "neutral", _newSecurity] call Gemini_fnc_updateTerritoryState;
+        
+        ["taskSucceeded"] call Gemini_fnc_updateStats;
+        ["globalChat", format ["Zone nettoyée: %1 est maintenant sécurisée à %2%%", _territoryData select 0, _newSecurity]] remoteExec ["Gemini_fnc_globalChat", 0];
+    };
+};
+
+// MISSION DE CACHE D'ARMES - TROUVER ET DÉTRUIRE
+Gemini_fnc_findCacheMission = {
+    params ["_territoryIndex"];
+    
+    private _territoryData = OPEX_territories select _territoryIndex;
+    private _locationName = _territoryData select 0;
+    private _position = _territoryData select 1;
+    private _radius = _territoryData select 2;
+    
+    // Créer la tâche
+    private _taskID = format ["cache_%1", _territoryIndex];
+    private _taskDesc = format ["Localisez et détruisez la cache d'armes ennemie à %1.", _locationName];
+    private _taskTitle = format ["Cache d'armes: %1", _locationName];
+    
+    [
+        OPEX_friendly_side1,
+        _taskID,
+        [_taskDesc, _taskTitle, ""],
+        _position,
+        "CREATED",
+        1,
+        true,
+        "destroy"
+    ] call BIS_fnc_taskCreate;
+    
+    // Trouver position pour la cache
+    private _cachePos = [_position, 20, _radius * 0.7, 3, 0, 20, 0] call BIS_fnc_findSafePos;
+    
+    // Créer la cache
+    private _crate = createVehicle [selectRandom OPEX_enemy_cacheCrates, _cachePos, [], 0, "NONE"];
+    _crate setDamage 0;
+    clearWeaponCargoGlobal _crate;
+    clearMagazineCargoGlobal _crate;
+    clearItemCargoGlobal _crate;
+    clearBackpackCargoGlobal _crate;
+    
+    // Ajouter des gardes
+    [OPEX_enemy_side1, ["infantry"], [2, 4], _cachePos, [5, 15], "guard", _cachePos, OPEX_enemy_AIskill, 100, "task"] call Gemini_fnc_spawnSquad;
+    
+    // Montrer un indice approximatif
+    private _markerPos = [_cachePos, 50] call BIS_fnc_randomPos;
+    private _marker = createMarker [format ["cache_hint_%1", _territoryIndex], _markerPos];
+    _marker setMarkerType "hd_unknown";
+    _marker setMarkerColor "ColorRed";
+    _marker setMarkerText "Possible cache";
+    _marker setMarkerSize [0.6, 0.6];
+    
+    // Vérification de la tâche
+    [_taskID, _territoryIndex, _crate, _marker] spawn {
+        params ["_taskID", "_territoryIndex", "_crate", "_marker"];
+        
+        waitUntil {
+            sleep 1;
+            !alive _crate
+        };
+        
+        // Tâche accomplie
+        [_taskID, "SUCCEEDED"] call BIS_fnc_taskSetState;
+        deleteMarker _marker;
+        
+        // Augmenter sécurité et réputation
+        private _territoryData = OPEX_territories select _territoryIndex;
+        private _newSecurity = ((_territoryData select 4) + 25) min 100;
+        [_territoryIndex, "neutral", _newSecurity] call Gemini_fnc_updateTerritoryState;
+        
+        ["taskSucceeded"] call Gemini_fnc_updateStats;
+        ["cacheDestroyed"] call Gemini_fnc_updateStats;
+        ["globalChat", format ["Cache détruite: Sécurité de %1 augmentée à %2%%", _territoryData select 0, _newSecurity]] remoteExec ["Gemini_fnc_globalChat", 0];
+    };
+};
+
+// MISSION DE SAUVETAGE - LIBÉRER UN CHEF DE VILLAGE
+Gemini_fnc_rescueChiefMission = {
+    params ["_territoryIndex"];
+    
+    private _territoryData = OPEX_territories select _territoryIndex;
+    private _locationName = _territoryData select 0;
+    private _position = _territoryData select 1;
+    private _radius = _territoryData select 2;
+    
+    // Créer la tâche
+    private _taskID = format ["rescue_%1", _territoryIndex];
+    private _taskDesc = format ["Le chef du village %1 est détenu par les forces ennemies. Localisez-le et libérez-le.", _locationName];
+    private _taskTitle = format ["Sauvetage: Chef de %1", _locationName];
+    
+    [
+        OPEX_friendly_side1,
+        _taskID,
+        [_taskDesc, _taskTitle, ""],
+        _position,
+        "CREATED",
+        1,
+        true,
+        "help"
+    ] call BIS_fnc_taskCreate;
+    
+    // Trouver position pour la détention
+    private _buildingPos = [_position, 20, _radius * 0.7, 3, 0, 20, 0] call BIS_fnc_findSafePos;
+    
+    // Créer le chef captif
+    private _group = createGroup civilian;
+    private _chief = _group createUnit [selectRandom OPEX_civilian_units, _buildingPos, [], 0, "NONE"];
+    _chief setCaptive true;
+    _chief setVariable ["isRescueTarget", true, true];
+    _chief setVariable ["territoryIndex", _territoryIndex, true];
+    removeAllWeapons _chief;
+    _chief disableAI "MOVE";
+    
+    // Animation de prisonnier
+    [_chief, "Acts_AidlPsitMstpSsurWnonDnon01"] remoteExec ["switchMove", 0, _chief];
+    
+    // Ajouter des gardes
+    [OPEX_enemy_side1, ["infantry"], [2, 4], _buildingPos, [5, 15], "guard", _buildingPos, OPEX_enemy_AIskill, 100, "task"] call Gemini_fnc_spawnSquad;
+    
+    // Ajouter action de libération
+    [
+        _chief,
+        "Libérer le chef",
+        {
+            params ["_target", "_caller", "_actionId", "_args"];
+            private _territoryIndex = _target getVariable "territoryIndex";
+            private _taskID = format ["rescue_%1", _territoryIndex];
+            
+            // Libérer le captif
+            _target setCaptive false;
+            _target enableAI "MOVE";
+            [_target, ""] remoteExec ["switchMove", 0, _target];
+            
+            // Marquer la tâche comme réussie
+            [_taskID, "SUCCEEDED"] call BIS_fnc_taskSetState;
+            
+            // Augmenter sécurité et réputation
+            private _territoryData = OPEX_territories select _territoryIndex;
+            private _newSecurity = ((_territoryData select 4) + 35) min 100;
+            [_territoryIndex, "neutral", _newSecurity] call Gemini_fnc_updateTerritoryState;
+            
+            // Stocker le chef dans les données du territoire
+            _territoryData set [5, _target];
+            _territoryData set [6, true]; // Chef contacté
+            OPEX_territories set [_territoryIndex, _territoryData];
+            publicVariable "OPEX_territories";
+            
+            // Ajouter l'interaction avec le chef
+            [_target] call Gemini_fnc_addChiefInteraction;
+            
+            ["taskSucceeded"] call Gemini_fnc_updateStats;
+            ["globalChat", format ["Chef libéré: %1 est maintenant sécurisée à %2%%", _territoryData select 0, _newSecurity]] remoteExec ["Gemini_fnc_globalChat", 0];
+        },
+        nil,
+        6,
+        true,
+        true,
+        "",
+        "alive _target && _this distance _target < 3"
+    ] remoteExec ["addAction", 0, _chief];
+    
+    // Indice sur la position
+    private _markerPos = [_buildingPos, 50] call BIS_fnc_randomPos;
+    private _marker = createMarker [format ["rescue_hint_%1", _territoryIndex], _markerPos];
+    _marker setMarkerType "hd_unknown";
+    _marker setMarkerColor "ColorBlue";
+    _marker setMarkerText "Information sur le chef";
+    _marker setMarkerSize [0.6, 0.6];
+    
+    // Surveillance de la mission
+    [_taskID, _territoryIndex, _chief, _marker] spawn {
+        params ["_taskID", "_territoryIndex", "_chief", "_marker"];
+        
+        waitUntil {
+            sleep 5;
+            (isNull _chief) || (!(_chief getVariable ["isRescueTarget", false]))
+        };
+        
+        // Vérifier si c'est à cause de la mort du chef
+        if (isNull _chief) then {
+            [_taskID, "FAILED"] call BIS_fnc_taskSetState;
+            deleteMarker _marker;
+            ["taskFailed"] call Gemini_fnc_updateStats;
+            ["globalChat", "Le chef a été tué. Mission échouée!"] remoteExec ["Gemini_fnc_globalChat", 0];
+        };
+    };
+};
+
+// MISSION PRINCIPALE DE LIBÉRATION
+Gemini_fnc_offerLiberationMission = {
+    params ["_territoryIndex"];
+    
+    // Sélectionner aléatoirement une des missions
+    private _missionType = selectRandom ["clear", "cache", "rescue"];
+    
+    switch (_missionType) do {
+        case "clear": { [_territoryIndex] call Gemini_fnc_clearAreaMission; };
+        case "cache": { [_territoryIndex] call Gemini_fnc_findCacheMission; };
+        case "rescue": { [_territoryIndex] call Gemini_fnc_rescueChiefMission; };
+    };
+};

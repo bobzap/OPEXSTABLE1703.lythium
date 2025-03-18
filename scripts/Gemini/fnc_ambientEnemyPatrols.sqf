@@ -20,6 +20,30 @@ private _mainFunction =
 		// SELECTING A RANDOM PLAYER
 		private _player = selectRandom (OPEX_playingPlayers select {speed _x < 20});
 
+    // VÉRIFICATION SI DANS UN TERRITOIRE AMI - AJOUT
+    private _playerPos = position _player;
+    private _inFriendlyTerritory = false;
+    
+    // Vérification si le joueur est dans un territoire ami
+    if (!isNil "OPEX_territories") then {
+        {
+            private _territoryData = _x;
+            private _position = _territoryData select 1;
+            private _radius = _territoryData select 2;
+            private _state = _territoryData select 3;
+            
+            if ((_playerPos distance _position) < _radius && _state == "friendly") exitWith {
+                _inFriendlyTerritory = true;
+            };
+        } forEach OPEX_territories;
+    };
+    
+    // Pas de patrouilles ennemies dans les territoires amis
+    if (_inFriendlyTerritory) exitWith {
+        if (OPEX_debug) then {systemChat "AMBIENT PATROL CANCELED: IN FRIENDLY TERRITORY"};
+    };
+
+
 		// UPDATING COUNT
 		OPEX_ambientEnemyPatrols = OPEX_ambientEnemyPatrols + 1; publicVariable "OPEX_ambientEnemyPatrols";
 

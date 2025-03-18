@@ -68,6 +68,15 @@ Gemini_fnc_initTerritorySystem = {
             };
         } forEach OPEX_territories;
     };
+
+diag_log format ["[TERRITOIRE] Système initialisé avec %1 territoires", count OPEX_territories];
+OPEX_territories_initialized = true;
+publicVariable "OPEX_territories_initialized";
+
+// Mise à jour initiale de la réputation
+[] call Gemini_fnc_updateReputationFromTerritories;
+
+
 };
 
 // CRÉATION D'UN TERRITOIRE
@@ -123,24 +132,24 @@ Gemini_fnc_createTerritory = {
 // CRÉATION DES MARQUEURS DE TERRITOIRE
 Gemini_fnc_createTerritoryMarkers = {
     params [["_territoryData", [], [[]]]];
-    
+   
     if (count _territoryData < 4) exitWith {
         diag_log "[TERRITOIRE] Erreur: Données de territoire invalides pour création de marqueurs";
         []
     };
-    
+   
     private _name = _territoryData select 0;
     private _position = _territoryData select 1;
     private _radius = _territoryData select 2;
     private _state = _territoryData select 3;
-    
+   
     // Couleur basée sur l'état
     private _color = switch (_state) do {
         case "friendly": {"ColorBLUFOR"};
         case "neutral": {"ColorCIV"};
         default {"ColorOPFOR"};
     };
-    
+   
     // Créer un marqueur de zone
     private _markerArea = createMarker [format ["territory_area_%1", _name], _position];
     _markerArea setMarkerShape "ELLIPSE";
@@ -148,16 +157,16 @@ Gemini_fnc_createTerritoryMarkers = {
     _markerArea setMarkerSize [_radius, _radius];
     _markerArea setMarkerColor _color;
     _markerArea setMarkerAlpha 0.3;
-    
+   
     // Créer un marqueur icône
     private _markerIcon = createMarker [format ["territory_icon_%1", _name], _position];
     _markerIcon setMarkerType "loc_Ruin";
     _markerIcon setMarkerColor _color;
     _markerIcon setMarkerText _name;
-    
+   
     // Stocker les marqueurs dans les données du territoire
     _territoryData set [8, [_markerArea, _markerIcon]];
-    
+   
     [_markerArea, _markerIcon]
 };
 
@@ -249,4 +258,33 @@ Gemini_fnc_updateTerritoryState = {
     };
     
     true
+};
+
+// Ajouter au fichier fnc_territoryCore.sqf
+
+// MISE À JOUR DE LA RÉPUTATION BASÉE SUR LES CHANGEMENTS DE TERRITOIRE
+Gemini_fnc_updateReputationFromTerritories = {
+    // Calcul de la réputation supplémentaire
+    private _totalTerritories = count OPEX_territories;
+    private _friendlyTerritories = {(_x select 3) == "friendly"} count OPEX_territories;
+    private _neutralTerritories = {(_x select 3) == "neutral"} count OPEX_territories;
+    private _enemyTerritories = {(_x select 3) == "enemy"} count OPEX_territories;
+    
+    // Calcul du bonus de réputation (1.0 = neutre, >1.0 = positif, <1.0 = négatif)
+    private _reputationBonus = 1.0;
+    
+    // S'il y a des territoires, appliquer le bonus
+    if (_totalTerritories > 0) then {
+        // Formule: Plus de territoires amis = meilleure réputation
+        _reputationBonus = 1.0 + ((_friendlyTerritories * 0.5 + _neutralTerritories * 0.2) / _totalTerritories);
+    };
+    
+    // Mise à jour du bonus de réputation
+    OPEX_stats_faction set [18, _reputationBonus];
+    publicVariable "OPEX_stats_faction";
+    
+    if (OPEX_debug) then {
+        diag_log format ["[TERRITOIRE] Mise à jour du bonus de réputation: %1 (F: %2, N: %3, E: %4)", 
+            _reputationBonus, _friendlyTerritories, _neutralTerritories, _enemyTerritories];
+    };
 };
