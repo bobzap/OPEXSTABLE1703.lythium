@@ -60,13 +60,34 @@
 	[] spawn Gemini_fnc_convertVehicles;
 	[] spawn Gemini_fnc_convertLoadouts;
 
-	// Initialisation du système de territoire
+
+// 1. D'abord, charger le fichier d'initialisation du territoire
 execVM "scripts\Territory\init.sqf";
+
+// 2. Ensuite, attendre que les fonctions principales soient compilées
 [] spawn {
-    waitUntil {!isNil "Gemini_fnc_initTerritorySystem"};
-    sleep 10; // Attendre que les autres systèmes s'initialisent
+    // Attendre que le fichier init.sqf ait compilé les fonctions principales
+    waitUntil {!isNil "Gemini_fnc_initTerritorySystem" && !isNil "Gemini_fnc_createTerritory"};
+    diag_log "[TERRITOIRE] Fonctions de base compilées, chargement des interactions chef...";
+    
+    // 3. Charger les interactions du chef à ce moment-là
+    execVM "scripts\Territory\fnc_chiefInteractions_simple.sqf";
+    
+    // 4. Attendre que les interactions du chef soient compilées
+    waitUntil {!isNil "Gemini_fnc_openChiefMissionDialog"};
+    diag_log "[TERRITOIRE] Toutes les fonctions territoriales compilées, initialisation du système...";
+    
+    // 5. Initialiser le système de territoire
     [] call Gemini_fnc_initTerritorySystem;
-};
+    
+    // 6. Attendre la confirmation d'initialisation
+    waitUntil {!isNil "OPEX_territories_initialized"};
+    diag_log "[TERRITOIRE] Initialisation du système territorial complète depuis initServer";
+		};
+
+
+
+
 
 	if (!("server" call Gemini_fnc_persistence_exists)) then
 		{

@@ -14,6 +14,7 @@ Gemini_fnc_updateReputationFromTerritories = compile preprocessFileLineNumbers "
 Gemini_fnc_spawnVillageChief = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 Gemini_fnc_addChiefInteraction = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 Gemini_fnc_openChiefDialog = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
+Gemini_fnc_handleChiefDeath = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 
 // Compilation des fonctions de mission
 Gemini_fnc_clearAreaMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
@@ -25,9 +26,24 @@ Gemini_fnc_offerSecurityMission = compile preprocessFileLineNumbers "scripts\Ter
 Gemini_fnc_offerAdvancedMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
 Gemini_fnc_spawnEnemiesForMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
 Gemini_fnc_spawnTerritoryAttackers = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_monitorPlayerInEnemyTerritory = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
+// Utiliser uniquement la version standalone
+Gemini_fnc_monitorPlayerInTerritory = compile preprocessFileLineNumbers "scripts\Territory\fnc_monitorPlayerInTerritory.sqf";
 
-// Exécution automatique au démarrage
+// Compilation des fonctions d'interaction du chef de village
+Gemini_fnc_openChiefMissionDialog = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+Gemini_fnc_showTerritoryStatus = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+Gemini_fnc_showFactionReputation = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+Gemini_fnc_getTerritoryColor = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+Gemini_fnc_getRecentIncidents = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+Gemini_fnc_getReputationEffect = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
+
+
+
+
+// Après avoir compilé toutes les fonctions
+diag_log "[TERRITOIRE] Fonctions compilées avec succès";
+
+// Exécution automatique au démarrage - Cette partie est cruciale
 [] spawn {
     diag_log "[TERRITOIRE] Préparation à l'initialisation...";
     sleep 15; // Attendre que tout soit prêt
@@ -36,14 +52,25 @@ Gemini_fnc_monitorPlayerInEnemyTerritory = compile preprocessFileLineNumbers "sc
     [] call Gemini_fnc_initTerritorySystem;
     diag_log "[TERRITOIRE] Système initialisé avec succès";
     
-    // Créer un territoire neutre près du camp pour tester les chefs
-    sleep 5;
-    private _campPos = getMarkerPos "OPEX_marker_camp";
-    private _testPos = [(_campPos select 0) + 1000, (_campPos select 1) + 1000, 0];
-    ["Village Test", _testPos, 300, "neutral"] call Gemini_fnc_createTerritory;
-    diag_log "[TERRITOIRE] Territoire test (neutre) créé";
+    // Lancer le moniteur après initialisation
+    waitUntil {!isNil "OPEX_territories_initialized"};
+    waitUntil {OPEX_territories_initialized};
+    diag_log "[TERRITOIRE] FORCE: Lancement du moniteur territorial depuis init.sqf principal";
     
+    sleep 5; // Petit délai pour s'assurer que tout est prêt
     
+    if (!isNil "Gemini_fnc_monitorPlayerInTerritory") then {
+        diag_log "[TERRITOIRE] FORCE: Fonction monitorPlayerInTerritory trouvée, exécution...";
+        [] spawn Gemini_fnc_monitorPlayerInTerritory;
+        systemChat "DEBUG: Moniteur territorial lancé!";
+        diag_log "[TERRITOIRE] FORCE: Moniteur lancé!";
+    } else {
+        diag_log "[TERRITOIRE] ERREUR GRAVE: Fonction monitorPlayerInTerritory non trouvée!";
+        systemChat "ERREUR: Moniteur territorial non trouvé!";
+    };
 };
 
+OPEX_territory_functions_compiled = true;
+publicVariable "OPEX_territory_functions_compiled";
+diag_log "[TERRITOIRE] Toutes les fonctions territoriales compilées avec succès";
 diag_log "[TERRITOIRE] Module chargé";

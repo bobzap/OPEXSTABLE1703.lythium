@@ -15,7 +15,7 @@
 
 	OPEX_version = "2.061";
 	OPEX_debug = true; // [bool] true (if yes) or false (if no) - default: false
-	OPEX_intro = true; // [bool] true (if yes) or false (if no) - default: true
+	OPEX_intro = false; // [bool] true (if yes) or false (if no) - default: true
 	OPEX_updateNotice = [false, parseNumber OPEX_version]; // [bool, number] true if a notice must be displayed once a new update is released
 
 // =========================================================================================================
@@ -81,9 +81,21 @@
 // INITIALIZING OTHER FUNCTIONS
 // =========================================================================================================
 
-	// TERRITORY SYSTEM
-	diag_log "[TERRITOIRE] Lancement du moniteur territorial depuis init.sqf principal";
-	[] spawn Gemini_fnc_monitorPlayerInEnemyTerritory;
+// TERRITORY SYSTEM
+diag_log "[TERRITOIRE] Configuration du moniteur territorial depuis init.sqf principal";
+[] spawn {
+    waitUntil {!isNil "OPEX_territory_functions_compiled" && {OPEX_territory_functions_compiled}};
+    waitUntil {!isNil "OPEX_territories_initialized" && {OPEX_territories_initialized}};
+    diag_log "[TERRITOIRE] Vérification si moniteur déjà actif...";
+    if (isNil "OPEX_territory_monitoring_active") then {
+        diag_log "[TERRITOIRE] Démarrage du moniteur territorial depuis init.sqf";
+        [] spawn Gemini_fnc_monitorPlayerInTerritory;
+    } else {
+        diag_log "[TERRITOIRE] Moniteur territorial déjà actif, aucune action nécessaire";
+    };
+};
+
+
 
 	// GEMINI
 	[] spawn Gemini_fnc_customActionsObjects;

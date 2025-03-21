@@ -16,14 +16,14 @@ class EditorData
 	};
 	class LayerIndexProvider
 	{
-		nextID=1822;
+		nextID=2642;
 	};
 	class Camera
 	{
-		pos[]={3913.6089,748.55371,17616.854};
-		dir[]={0.13344003,-0.55074191,0.8239401};
-		up[]={0.088047408,0.83467561,0.54365838};
-		aside[]={0.98713815,0,-0.15987054};
+		pos[]={3880.2859,785.52502,17485.943};
+		dir[]={-0.29167888,-0.61224842,0.73489815};
+		up[]={-0.22586028,0.79066545,0.56906521};
+		aside[]={0.9294678,0,0.36890301};
 	};
 };
 binarizationWanted=0;
@@ -174,6 +174,7 @@ addons[]=
 	"A3_Armor_F_Gamma_MBT_01",
 	"ace_mk6mortar",
 	"rhs_c_a2port_car",
+	"ace_compat_rhs_afrf3",
 	"rhs_c_heavyweapons",
 	"rhs_c_zil131",
 	"AMF_Structures_F_Camping",
@@ -184,7 +185,7 @@ class AddonsMetaData
 {
 	class List
 	{
-		items=85;
+		items=86;
 		class Item0
 		{
 			className="A3_Supplies_F_Exp";
@@ -747,19 +748,26 @@ class AddonsMetaData
 		};
 		class Item82
 		{
+			className="ace_compat_rhs_afrf3";
+			name="ACE3 - RHS AFRF Compatibility";
+			author="ACE-Team";
+			url="https://ace3.acemod.org/";
+		};
+		class Item83
+		{
 			className="rhs_c_heavyweapons";
 			name="Heavy weapons pack";
 			author="Red Hammer Studios";
 			url="http://www.rhsmods.org/";
 		};
-		class Item83
+		class Item84
 		{
 			className="rhs_c_zil131";
 			name="ZiL-131 Truck";
 			author="Red Hammer Studios";
 			url="http://www.rhsmods.org/";
 		};
-		class Item84
+		class Item85
 		{
 			className="A3_Soft_F_Beta";
 			name="Arma 3 Beta - Unarmored Land Vehicles";

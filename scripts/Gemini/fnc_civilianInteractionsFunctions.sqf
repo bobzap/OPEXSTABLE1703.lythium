@@ -163,16 +163,19 @@
 
 					// OPEN INTERACTION MENU
 						_civilian addAction
-							[
-								"<t color=""#FFFFFF"">" + localize "STR_action_civilian_interaction" + "</t>",
-								"scripts\Gemini\fnc_civilianInteractionsDialog.sqf",
-								nil,
-								6,
-								true,
-								true,
-								"",
-								"(!captive _this) && (alive _target) && (abs (speed _target) < 0.1) && (_target distance _this < 3) && (vehicle _this == _this)"
-							];
+[
+    "<t color=""#FFFFFF"">" + localize "STR_action_civilian_interaction" + "</t>",
+    {
+        params ["_target", "_caller"];
+        [_target, _caller] execVM "scripts\Gemini\fnc_civilianInteractionsDialog.sqf";
+    },
+    nil,
+    6,
+    true,
+    true,
+    "",
+    "(!captive _this) && (alive _target) && (abs (speed _target) < 0.1) && (_target distance _this < 3) && (vehicle _this == _this)"
+];
 			};
 
 // =========================================================================================================

@@ -419,6 +419,79 @@
 										colorDisabled[] = {0.4,0.4,0.4,1.0};
 										colorBackgroundDisabled[] = {0.00,0.00,0.00,1.00};
 									};
+
+									// CHEF DE VILLAGE (NOUVELLE SECTION)
+class OPEX_civilianInteractions_CHIEF: RscText
+{
+    idc = 3030;
+    sizeEx = 0.03;
+    style = ST_LEFT;
+    x = 0.4 * safezoneW + safezoneX;
+    y = 0.33 * safezoneH + safezoneY;
+    w = 0.135 * safezoneW;
+    h = 0.025 * safezoneH;
+    colorBackground[] = {0.00, 0.25, 0.65, 0.90};
+};
+    class OPEX_civilianInteractions_chief_missions: RscButton
+    {
+        idc = 3031;
+        sizeEx = 0.03;
+        style = ST_LEFT;
+        x = 0.4 * safezoneW + safezoneX;
+        y = 0.36 * safezoneH + safezoneY;
+        w = 0.135 * safezoneW;
+        h = 0.025 * safezoneH;
+        offsetPressedX = 0.002;
+        offsetPressedY = 0.002;
+        color[] = {1,1,1,1};
+        colorText[] = {1,1,1,1};
+        colorBackground[] = {0.00,0.00,0.00,1.00};
+        colorActive[] = {1,1,1,1};
+        colorBackgroundActive[] = {1.00,1.00,1.00,1.00};
+        colorFocused[] = {0.00,0.00,0.00,1.00};
+        colorDisabled[] = {0.4,0.4,0.4,1.0};
+        colorBackgroundDisabled[] = {0.00,0.00,0.00,1.00};
+    };
+    class OPEX_civilianInteractions_chief_status: RscButton
+    {
+        idc = 3032;
+        sizeEx = 0.03;
+        style = ST_LEFT;
+        x = 0.4 * safezoneW + safezoneX;
+        y = 0.387 * safezoneH + safezoneY;
+        w = 0.135 * safezoneW;
+        h = 0.025 * safezoneH;
+        offsetPressedX = 0.002;
+        offsetPressedY = 0.002;
+        color[] = {1,1,1,1};
+        colorText[] = {1,1,1,1};
+        colorBackground[] = {0.00,0.00,0.00,1.00};
+        colorActive[] = {1,1,1,1};
+        colorBackgroundActive[] = {1.00,1.00,1.00,1.00};
+        colorFocused[] = {0.00,0.00,0.00,1.00};
+        colorDisabled[] = {0.4,0.4,0.4,1.0};
+        colorBackgroundDisabled[] = {0.00,0.00,0.00,1.00};
+    };
+    class OPEX_civilianInteractions_chief_reputation: RscButton
+    {
+        idc = 3033;
+        sizeEx = 0.03;
+        style = ST_LEFT;
+        x = 0.4 * safezoneW + safezoneX;
+        y = 0.414 * safezoneH + safezoneY;
+        w = 0.135 * safezoneW;
+        h = 0.025 * safezoneH;
+        offsetPressedX = 0.002;
+        offsetPressedY = 0.002;
+        color[] = {1,1,1,1};
+        colorText[] = {1,1,1,1};
+        colorBackground[] = {0.00,0.00,0.00,1.00};
+        colorActive[] = {1,1,1,1};
+        colorBackgroundActive[] = {1.00,1.00,1.00,1.00};
+        colorFocused[] = {0.00,0.00,0.00,1.00};
+        colorDisabled[] = {0.4,0.4,0.4,1.0};
+        colorBackgroundDisabled[] = {0.00,0.00,0.00,1.00};
+    };
 			};
 
 	};

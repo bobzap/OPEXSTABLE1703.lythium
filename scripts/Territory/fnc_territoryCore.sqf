@@ -18,14 +18,14 @@ Gemini_fnc_initTerritorySystem = {
     {
         private _locationName = text _x;
         private _locationPos = position _x;
-        private _radius = (size _x select 0) max 200;
+        private _radius = (size _x select 0) max 400;
         
         // Ne pas utiliser les zones sûres
         if (!([_locationPos, OPEX_locations_safe] call BIS_fnc_isPosBlacklisted)) then {
-            // Déterminer état initial (basé sur la distance de la FOB)
-            private _state = "enemy";
-            if (_locationPos distance (getMarkerPos "OPEX_marker_camp") < 1000) then {
-                _state = "neutral";
+            // Déterminer état initial: par défaut "unknown" sauf si très proche du camp
+            private _state = "unknown";
+            if (_locationPos distance (getMarkerPos "OPEX_marker_camp") < 2500) then {
+                _state = "neutral"; // Seules les zones très proches sont connues dès le départ
             };
             
             // Créer un territoire
@@ -34,25 +34,22 @@ Gemini_fnc_initTerritorySystem = {
         };
     } forEach nearestLocations [OPEX_mapCenter, ["NameVillage", "NameCity", "NameCityCapital"], OPEX_mapRadius];
     
-    // Marqueur de test
+    // Marqueur de test si aucun territoire n'est créé
     if (count OPEX_territories == 0) then {
         diag_log "[TERRITOIRE] ATTENTION: Aucun territoire n'a été créé!";
-        
-        // Créer un territoire de test
         ["Test Village", getMarkerPos "OPEX_marker_camp", 300, "friendly"] call Gemini_fnc_createTerritory;
     };
     
     diag_log format ["[TERRITOIRE] Système initialisé avec %1 territoires", count OPEX_territories];
-    OPEX_territories_initialized = true;
-    publicVariable "OPEX_territories_initialized";
     
-    // Initialiser les chefs pour tous les territoires neutres et amis
+    // Initialiser les chefs de manière séquentielle
     [] spawn {
-        // Attendre un peu que tous les territoires soient créés
-        sleep 5;
+        sleep 5; // Attendre que tous les territoires soient créés
         
-        diag_log "[TERRITOIRE] Initialisation des chefs de village...";
+        diag_log "[TERRITOIRE] Début de l'initialisation des chefs de village...";
         
+        // Identifier d'abord tous les territoires éligibles
+        private _territoriesToProcess = [];
         {
             private _territoryData = _x;
             private _state = _territoryData select 3;
@@ -60,23 +57,45 @@ Gemini_fnc_initTerritorySystem = {
             private _name = _territoryData select 0;
             
             if (_state == "neutral" || _state == "friendly") then {
-                // Vérifier qu'il n'y a pas déjà un chef
                 if (isNull (_territoryData select 5)) then {
-                    diag_log format ["[TERRITOIRE] Création initiale d'un chef pour territoire %1 (%2)", _name, _state];
-                    [_index] spawn Gemini_fnc_spawnVillageChief;
+                    _territoriesToProcess pushBack [_index, _name, _state];
+                    diag_log format ["[TERRITOIRE] Territoire %1 (%2) ajouté à la liste pour recevoir un chef", _name, _state];
                 };
+            } else {
+                diag_log format ["[TERRITOIRE] Territoire %1 (%2) non éligible pour un chef", _name, _state];
             };
         } forEach OPEX_territories;
+        
+        diag_log format ["[TERRITOIRE] %1 territoires à traiter pour création de chefs", count _territoriesToProcess];
+        
+        // Traiter chaque territoire séquentiellement pour éviter les conflits
+        {
+            _x params ["_index", "_name", "_state"];
+            diag_log format ["[TERRITOIRE] Traitement du territoire %1 (index %2) pour création de chef", _name, _index];
+            
+            private _chief = [_index] call Gemini_fnc_spawnVillageChief;
+            
+            if (!isNull _chief) then {
+                diag_log format ["[TERRITOIRE] Chef créé pour territoire %1", _name];
+            } else {
+                diag_log format ["[TERRITOIRE] ÉCHEC: Aucun chef créé pour territoire %1", _name];
+            };
+            
+            // Pause entre chaque création pour stabilité
+            sleep 2;
+        } forEach _territoriesToProcess;
+        
+        diag_log "[TERRITOIRE] Initialisation des chefs terminée";
     };
-
-diag_log format ["[TERRITOIRE] Système initialisé avec %1 territoires", count OPEX_territories];
-OPEX_territories_initialized = true;
-publicVariable "OPEX_territories_initialized";
-
-// Mise à jour initiale de la réputation
-[] call Gemini_fnc_updateReputationFromTerritories;
-
-
+    
+    // Finaliser l'initialisation
+    OPEX_territories_initialized = true;
+    publicVariable "OPEX_territories_initialized";
+    
+    // Mise à jour initiale de la réputation
+    [] call Gemini_fnc_updateReputationFromTerritories;
+    
+    diag_log "[TERRITOIRE] Système de territoire complètement initialisé";
 };
 
 // CRÉATION D'UN TERRITOIRE
@@ -118,13 +137,13 @@ Gemini_fnc_createTerritory = {
     // Index du territoire nouvellement créé
     private _index = count OPEX_territories - 1;
     
-    // Spawner le chef de village si c'est une zone neutre ou amie
-    if (_state != "enemy") then {
-        diag_log format ["[TERRITOIRE] Territoire non-hostile: %1 - Tentative de spawn chef", _name];
-        
-        // Appel direct sans spawn pour déboguer
-        [_index] call Gemini_fnc_spawnVillageChief;
-    };
+// Spawner le chef de village UNIQUEMENT si c'est une zone neutre ou amie (pas unknown)
+/* if (_state == "neutral" || _state == "friendly") then {
+    diag_log format ["[TERRITOIRE] Territoire non-hostile: %1 - Tentative de spawn chef", _name];
+    [_index] call Gemini_fnc_spawnVillageChief;
+} else {
+    diag_log format ["[TERRITOIRE] Territoire %1 avec état %2 - Pas de spawn de chef", _name, _state];
+}; */
     
     _territoryData
 };
@@ -132,24 +151,26 @@ Gemini_fnc_createTerritory = {
 // CRÉATION DES MARQUEURS DE TERRITOIRE
 Gemini_fnc_createTerritoryMarkers = {
     params [["_territoryData", [], [[]]]];
-   
+    
     if (count _territoryData < 4) exitWith {
         diag_log "[TERRITOIRE] Erreur: Données de territoire invalides pour création de marqueurs";
         []
     };
-   
+    
     private _name = _territoryData select 0;
     private _position = _territoryData select 1;
     private _radius = _territoryData select 2;
     private _state = _territoryData select 3;
-   
+    
     // Couleur basée sur l'état
-    private _color = switch (_state) do {
-        case "friendly": {"ColorBLUFOR"};
-        case "neutral": {"ColorCIV"};
-        default {"ColorOPFOR"};
-    };
-   
+// Couleur basée sur l'état
+private _color = switch (_state) do {
+    case "friendly": {"ColorBLUFOR"};
+    case "neutral": {"ColorCIV"};
+    case "unknown": {"ColorGrey"}; //   "ColorGrey" à "ColorWhite"
+    default {"ColorOPFOR"};
+};
+    
     // Créer un marqueur de zone
     private _markerArea = createMarker [format ["territory_area_%1", _name], _position];
     _markerArea setMarkerShape "ELLIPSE";
@@ -157,16 +178,24 @@ Gemini_fnc_createTerritoryMarkers = {
     _markerArea setMarkerSize [_radius, _radius];
     _markerArea setMarkerColor _color;
     _markerArea setMarkerAlpha 0.3;
-   
+    
     // Créer un marqueur icône
-    private _markerIcon = createMarker [format ["territory_icon_%1", _name], _position];
+    private _iconPosition = [_position select 0, (_position select 1) + (_radius * 0.1), 0];
+private _markerIcon = createMarker [format ["territory_icon_%1", _name], _iconPosition];
+    
     _markerIcon setMarkerType "loc_Ruin";
     _markerIcon setMarkerColor _color;
-    _markerIcon setMarkerText _name;
-   
+    
+    // Texte différent pour les zones inconnues
+    if (_state == "unknown") then {
+        _markerIcon setMarkerText format ["%1 (Non renseigné)", _name];
+    } else {
+        _markerIcon setMarkerText _name;
+    };
+    
     // Stocker les marqueurs dans les données du territoire
     _territoryData set [8, [_markerArea, _markerIcon]];
-   
+    
     [_markerArea, _markerIcon]
 };
 
@@ -224,12 +253,20 @@ Gemini_fnc_updateTerritoryState = {
     private _color = switch (_currentState) do {
         case "friendly": {"ColorBLUFOR"};
         case "neutral": {"ColorCIV"};
+        case "unknown": {"ColorGrey"};
         default {"ColorOPFOR"};
     };
     
     if (count _markers > 1) then {
         (_markers select 0) setMarkerColor _color;
         (_markers select 1) setMarkerColor _color;
+        
+        // Mise à jour du texte pour les zones inconnues
+        if (_currentState == "unknown") then {
+            (_markers select 1) setMarkerText format ["%1 (Non renseigné)", _name];
+        } else {
+            (_markers select 1) setMarkerText _name;
+        };
     };
     
     // Mise à jour de l'array principal
@@ -240,7 +277,8 @@ Gemini_fnc_updateTerritoryState = {
     if (_oldState != _currentState) then {
         diag_log format ["[TERRITOIRE] Changement d'état pour %1: %2 -> %3", _name, _oldState, _currentState];
         
-        if (_currentState == "friendly" || _currentState == "neutral") then {
+        // Ajouter un chef seulement quand on passe en friendly ou neutral depuis un autre état
+        if ((_currentState == "friendly" || _currentState == "neutral") && (_oldState != "friendly" && _oldState != "neutral")) then {
             if (isNull (_territoryData select 5)) then {
                 diag_log format ["[TERRITOIRE] Création forcée d'un chef pour %1", _name];
                 [_territoryIndex] call Gemini_fnc_spawnVillageChief;
@@ -252,10 +290,14 @@ Gemini_fnc_updateTerritoryState = {
             case "friendly": {format ["%1 est maintenant sous contrôle ami!", _name]};
             case "neutral": {format ["%1 est maintenant neutre.", _name]};
             case "enemy": {format ["%1 est tombé aux mains de l'ennemi!", _name]};
+            case "unknown": {format ["%1 est désormais non renseigné.", _name]};
         };
         
         ["globalChat", _message] remoteExec ["Gemini_fnc_globalChat", 0];
     };
+    
+    // Mettre à jour la réputation globale basée sur les territoires
+    [] call Gemini_fnc_updateReputationFromTerritories;
     
     true
 };

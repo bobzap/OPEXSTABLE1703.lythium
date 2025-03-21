@@ -5,6 +5,11 @@
 
 // FONCTION: Spawn d'un chef de village
 Gemini_fnc_spawnVillageChief = {
+
+    if (!isServer) exitWith {
+    diag_log "[TERRITOIRE] Tentative de spawn d'un chef depuis un client - ignoré";
+    objNull
+};
     params ["_territoryIndex"];
     
     diag_log format ["[TERRITOIRE] Début fonction spawn chef pour index: %1", _territoryIndex];
@@ -26,36 +31,83 @@ Gemini_fnc_spawnVillageChief = {
     
     diag_log format ["[TERRITOIRE] Création d'un chef pour: %1 à position %2", _name, _position];
     
-    // Créer le groupe pour le chef
-    private _group = createGroup civilian;
-    
-    // Choisir apparence adaptée à la région
-    private _unitType = selectRandom OPEX_civilian_units;
-    
-    // Trouver un bâtiment adapté
+    // Trouver une position sécurisée
+    private _safePos = _position;
+    private _foundBuildingPos = false;
     private _buildings = nearestObjects [_position, ["House"], 150];
-    private _building = selectRandom (_buildings select {count (_x buildingPos -1) > 0});
-    private _bPos = _position;
     
-    if (!isNil "_building") then {
-        _bPos = selectRandom (_building buildingPos -1);
-    } else {
-        // Pas de bâtiment approprié, utiliser la position du territoire
-        diag_log format ["[TERRITOIRE] Aucun bâtiment approprié trouvé pour le chef du territoire: %1", _name];
+    // Essayer de trouver une position dans un bâtiment
+    {
+        private _buildingPositions = _x buildingPos -1;
+        if (count _buildingPositions > 0) then {
+            _safePos = selectRandom _buildingPositions;
+            _foundBuildingPos = true;
+            diag_log format ["[TERRITOIRE] Position de bâtiment trouvée pour chef de %1: %2", _name, _safePos];
+            break;
+        };
+    } forEach _buildings;
+    
+    // Si pas de bâtiment, trouver une position sécurisée sur le terrain
+    if (!_foundBuildingPos) then {
+        _safePos = [_position, 0, 50, 3, 0, 20, 0] call BIS_fnc_findSafePos;
+        if (count _safePos == 2) then { _safePos pushBack 0; }; // Assurer que Z est défini
+        diag_log format ["[TERRITOIRE] Position extérieure trouvée pour chef de %1: %2", _name, _safePos];
     };
     
-    // Créer le chef
-    private _chief = _group createUnit [_unitType, _bPos, [], 0, "NONE"];
+    // S'assurer que le Z n'est pas négatif
+    if ((_safePos select 2) < 0) then {
+        _safePos set [2, 0];
+        diag_log format ["[TERRITOIRE] Correction de la hauteur Z pour chef de %1", _name];
+    };
+    
+    // CRÉATION DE L'UNITÉ
+    private _chief = [
+        OPEX_civilian_side1,       // Côté (civil)
+        grpNull,                   // Groupe (nouveau)
+        OPEX_civilian_units,       // Types d'unités civiles
+        _safePos,                  // Position sécurisée
+        [0.5, 0.8],                // Niveau de compétence
+        true,                      // Désactiver l'hostilité
+        "distance"                 // Durée de vie
+    ] call Gemini_fnc_createUnit;
+    
+    // Vérifier si la création a réussi
+    if (isNull _chief) exitWith {
+        diag_log format ["[TERRITOIRE] ERREUR: Échec de création du chef pour %1", _name];
+        objNull
+    };
+    
+    // Sécurité supplémentaire: s'assurer que l'unité n'est pas sous la carte
+    if ((getPos _chief select 2) < 0) then {
+        _chief setPosASL [_safePos select 0, _safePos select 1, getTerrainHeightASL [_safePos select 0, _safePos select 1] + 0.5];
+        diag_log format ["[TERRITOIRE] Position du chef de %1 ajustée pour éviter placement sous la carte", _name];
+    };
+    
+    // Définir les variables spécifiques aux chefs
     _chief setVariable ["isVillageChief", true, true];
     _chief setVariable ["territoryIndex", _territoryIndex, true];
     
-    // Définir comportement
-    _chief disableAI "PATH";
-    if (!isNil "BIS_fnc_ambientAnim") then {
-        [_chief, "SIT_U1"] call BIS_fnc_ambientAnim;
+    // S'assurer que les variables critiques sont définies correctement
+    _chief setVariable ["side", "friendly", true];
+    _chief setVariable ["sympathy", 100, true];
+    _chief setVariable ["polyglot", true, true];
+    _chief setVariable ["gatheredIntel", false, true];
+    _chief setVariable ["informer", 100, true];
+    
+    // Définir comportement selon l'emplacement
+    if (_foundBuildingPos) then {
+        _chief disableAI "PATH";
+        if (!isNil "BIS_fnc_ambientAnim") then {
+            [_chief, "SIT_U1"] call BIS_fnc_ambientAnim;
+        };
+    } else {
+        // Animation debout pour les chefs en extérieur
+        if (!isNil "BIS_fnc_ambientAnim") then {
+            [_chief, "STAND_U1"] call BIS_fnc_ambientAnim;
+        };
     };
     
-    // Ajouter action d'interaction
+    // Ajouter l'interaction du chef
     [_chief] call Gemini_fnc_addChiefInteraction;
     
     // Ajouter l'eventHandler de mort
@@ -64,22 +116,28 @@ Gemini_fnc_spawnVillageChief = {
         [_unit, _killer] call Gemini_fnc_handleChiefDeath;
     }];
     
-    // Stocker dans les données de territoire
-    _territoryData set [5, _chief];
-    OPEX_territories set [_territoryIndex, _territoryData];
+    // IMPORTANT: Mettre à jour les données du territoire IMMÉDIATEMENT
+    private _updatedTerritoryData = OPEX_territories select _territoryIndex;
+    _updatedTerritoryData set [5, _chief];
+    OPEX_territories set [_territoryIndex, _updatedTerritoryData];
     publicVariable "OPEX_territories";
     
-    // Créer un marqueur spécial pour le chef
+    // Créer un marqueur pour le chef
     private _chiefMarker = createMarker [format ["territory_chief_%1", _name], getPos _chief];
     _chiefMarker setMarkerType "mil_triangle";
     _chiefMarker setMarkerColor "ColorYellow";
     _chiefMarker setMarkerText format ["%1 - Chef", _name];
     _chiefMarker setMarkerSize [0.6, 0.6];
+    _chiefMarker setMarkerAlpha 0; // Invisible au départ
     
-    diag_log format ["[TERRITOIRE] Chef créé: %1", _chief];
+    diag_log format ["[TERRITOIRE] Chef créé avec succès: %1 à position %2", _chief, getPos _chief];
     
     _chief
 };
+
+
+
+
 // FONCTION: Ajouter l'interaction au chef de village
 Gemini_fnc_addChiefInteraction = {
     params ["_chief"];
@@ -88,17 +146,15 @@ Gemini_fnc_addChiefInteraction = {
         diag_log "[TERRITOIRE] Erreur: Chef nul pour l'ajout d'interaction";
     };
     
-    // Action principale pour parler au chef
+    // Marquer comme chef de village
+    _chief setVariable ["isVillageChief", true, true];
+    
+    // Action principale pour parler au chef (utilise le dialogue standard des civils)
     _chief addAction [
         "<t color='#FFFF00'>Parler au chef de village</t>",
         {
             params ["_target", "_caller", "_actionId", "_arguments"];
-            private _territoryIndex = _target getVariable ["territoryIndex", -1];
-            
-            if (_territoryIndex == -1) exitWith {hint "Erreur: Chef non lié à un territoire"};
-            
-            // Ouvrir le dialogue du chef (version simple pour le test)
-            [_target, _caller, _territoryIndex] call Gemini_fnc_openChiefDialog;
+            [_target, _caller] execVM "scripts\Gemini\fnc_civilianInteractionsDialog.sqf";
         },
         nil,
         6,
@@ -111,108 +167,22 @@ Gemini_fnc_addChiefInteraction = {
     diag_log format ["[TERRITOIRE] Interaction ajoutée au chef: %1", _chief];
 };
 
-// FONCTION: Ouvrir le dialogue avec le chef
-Gemini_fnc_openChiefDialog = {
-    params ["_chief", "_player", "_territoryIndex"];
+// FONCTION: Afficher la boîte de dialogue des missions du chef
+Gemini_fnc_openChiefMissionDialog = {
+    params [["_chief", objNull, [objNull]], ["_player", objNull, [objNull]]];
     
-    private _territoryData = OPEX_territories select _territoryIndex;
-    private _state = _territoryData select 3;
-    private _securityLevel = _territoryData select 4;
-    
-    // Marquer le chef comme contacté
-    _territoryData set [6, true];
-    OPEX_territories set [_territoryIndex, _territoryData];
-    publicVariable "OPEX_territories";
-    
-    // Obtenir la réputation globale
-    private _reputation = OPEX_stats_faction select 18;
-    
-    // Dialogue basé sur l'état du territoire
-    private _text = "";
-    
-    switch (_state) do {
-        case "enemy": {
-            if (_reputation < 0.5) then {
-                _text = "Je n'ai rien à vous dire. Partez d'ici!";
-            } else {
-                _text = "Nous avons peur des insurgés. Aidez-nous à libérer notre village!";
-                // Proposer une mission de libération
-                if (!OPEX_assignedTask) then {
-                    private _acceptLib = [
-                        "Accepter la mission de libération ?",
-                        "Demande d'aide",
-                        "Oui",
-                        "Non"
-                    ] call BIS_fnc_guiMessage;
-                    
-                    if (_acceptLib) then {
-                        [_territoryIndex] call Gemini_fnc_offerLiberationMission;
-                    };
-                } else {
-                    _text = _text + " (Terminez d'abord votre mission actuelle)";
-                };
-            };
-        };
-        case "neutral": {
-            _text = format ["Notre village est relativement calme, mais nous avons besoin d'aide pour rester en sécurité. Niveau de sécurité actuel: %1%%", _securityLevel];
-            // Proposer une mission de stabilisation
-            if (!OPEX_assignedTask) then {
-                private _acceptStab = [
-                    "Accepter la mission de stabilisation ?",
-                    "Demande d'aide",
-                    "Oui",
-                    "Non"
-                ] call BIS_fnc_guiMessage;
-                
-                if (_acceptStab) then {
-                    [_territoryIndex] call Gemini_fnc_offerStabilizationMission;
-                };
-            } else {
-                _text = _text + " (Terminez d'abord votre mission actuelle)";
-            };
-        };
-        case "friendly": {
-            _text = format ["Merci de sécuriser notre village. Nous sommes en sécurité à %1%%.", _securityLevel];
-            if (_securityLevel < 75) then {
-                _text = _text + " Mais nous avons besoin de plus de sécurité.";
-                // Proposer une mission de sécurisation
-                if (!OPEX_assignedTask) then {
-                    private _acceptSec = [
-                        "Accepter la mission de sécurisation ?",
-                        "Demande d'aide",
-                        "Oui",
-                        "Non"
-                    ] call BIS_fnc_guiMessage;
-                    
-                    if (_acceptSec) then {
-                        [_territoryIndex] call Gemini_fnc_offerSecurityMission;
-                    };
-                } else {
-                    _text = _text + " (Terminez d'abord votre mission actuelle)";
-                };
-            } else {
-                _text = _text + " Nos habitants vous sont reconnaissants.";
-                // Proposer une mission avancée
-                if (!OPEX_assignedTask) then {
-                    private _acceptAdv = [
-                        "Accepter une mission spéciale ?",
-                        "Demande d'aide",
-                        "Oui",
-                        "Non"
-                    ] call BIS_fnc_guiMessage;
-                    
-                    if (_acceptAdv) then {
-                        [_territoryIndex] call Gemini_fnc_offerAdvancedMission;
-                    };
-                } else {
-                    _text = _text + " (Terminez d'abord votre mission actuelle)";
-                };
-            };
-        };
+    // Vérification de sécurité
+    if (isNull _chief) exitWith {
+        hint "Erreur: Chef non défini";
     };
     
-    // Afficher le dialogue
-    hint _text;
+    private _territoryIndex = _chief getVariable ["territoryIndex", -1];
+    if (_territoryIndex == -1) exitWith {
+        hint "Erreur: Chef non lié à un territoire";
+    };
+    
+    // Appel de la fonction existante
+    [_chief, _player, _territoryIndex] call Gemini_fnc_openChiefDialog;
 };
 
 // FONCTION: Gestion de la mort d'un chef de village

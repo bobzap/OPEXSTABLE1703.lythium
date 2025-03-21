@@ -1852,11 +1852,35 @@
         <French>Profession</French>
 		<Spanish>Profesión</Spanish>
       </Key>
+
+
       <Key ID="STR_dialog_civilianInteractions_conversation_suspicious">
         <Original>Suspicious activities</Original>
         <French>Activitées suspectes</French>
 		<Spanish>Actividades sospechosas</Spanish>
       </Key>
+
+
+<Key ID="STR_dialog_civilianInteractions_chief_TITLE">
+    <Original>CHEF DE VILLAGE</Original>
+    <French>CHEF DE VILLAGE</French>
+</Key>
+<Key ID="STR_dialog_civilianInteractions_chief_missions">
+    <Original>Discuss available missions</Original>
+    <French>Discuter des missions disponibles</French>
+</Key>
+<Key ID="STR_dialog_civilianInteractions_chief_status">
+    <Original>Ask about village status</Original>
+    <French>Demander l'état du village</French>
+</Key>
+<Key ID="STR_dialog_civilianInteractions_chief_reputation">
+    <Original>Ask about your reputation</Original>
+    <French>Demander votre réputation</French>
+</Key>
+
+
+
+
       <Key ID="STR_civilianConversation_annoyed_a">
         <Original>Me not talk you.</Original>
         <French>Je pas parler vous.</French>

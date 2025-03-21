@@ -629,32 +629,45 @@ Gemini_fnc_getRandomMissionForState = {
 
 // Ajouter dans fnc_territoryMissions.sqf
 
-// DÉTECTION D'ENTRÉE EN TERRITOIRE ENNEMI
-Gemini_fnc_monitorPlayerInEnemyTerritory = {
+/*
+// Dans la fonction Gemini_fnc_monitorPlayerInTerritory, modifions pour améliorer la fiabilité
+// DÉTECTION D'ENTRÉE EN TERRITOIRE
+
+Gemini_fnc_monitorPlayerInTerritory = {
     if (!isServer) exitWith {
         diag_log "[TERRITOIRE] Fonction monitor annulée: n'est pas serveur";
     };
     
-    diag_log "[TERRITOIRE] Fonction monitorPlayerInEnemyTerritory démarrée";
+    diag_log "[TERRITOIRE] Fonction monitorPlayerInTerritory démarrée";
+    
+    // Placer un flag global pour indiquer que la surveillance est active
+    missionNamespace setVariable ["OPEX_territory_monitoring_active", true, true];
     
     [] spawn {
-        diag_log "[TERRITOIRE] Spawn de surveillance territorial démarré";
+        // S'assurer que le système est initialisé
+        waitUntil {!isNil "OPEX_territories_initialized"};
+        waitUntil {OPEX_territories_initialized};
+        
+        diag_log "[TERRITOIRE] Surveillance territoriale activée - début de la boucle principale";
+        
+        // Boucle principale de surveillance
         while {true} do {
-            diag_log "[TERRITOIRE] Vérification des joueurs en territoire ennemi...";
-            diag_log format ["[TERRITOIRE] Nombre de joueurs: %1", count allPlayers];
-            diag_log format ["[TERRITOIRE] Nombre de territoires: %1", count OPEX_territories];
+            diag_log "[TERRITOIRE] Cycle de vérification des territoires - nombre de joueurs: " + str(count allPlayers);
             
-            // Utiliser allPlayers au lieu de OPEX_playingPlayers
             {
                 private _player = _x;
-                private _playerPos = position _player;
+                private _playerPos = getPosATL _player;
                 private _playerName = name _player;
-                diag_log format ["[TERRITOIRE] Vérification du joueur %1 à position %2", _playerName, _playerPos];
                 
-                private _inEnemyTerritory = false;
+                diag_log format ["[TERRITOIRE] Vérification joueur: %1 à position %2", _playerName, _playerPos];
+                
+                // Variables pour stocker l'état du territoire où se trouve le joueur
+                private _inTerritory = false;
+                private _territoryState = "";
                 private _territoryIndex = -1;
+                private _territoryName = "";
                 
-                // Vérifier si le joueur est dans un territoire ennemi
+                // Vérifier chaque territoire
                 {
                     private _territoryData = _x;
                     private _name = _territoryData select 0;
@@ -662,81 +675,80 @@ Gemini_fnc_monitorPlayerInEnemyTerritory = {
                     private _radius = _territoryData select 2;
                     private _state = _territoryData select 3;
                     
-                    diag_log format ["[TERRITOIRE] Vérification territoire %1 (%2) - distance %3 m - rayon %4 m", 
-                        _name, _state, (_playerPos distance _position), _radius];
+                    // Calculer distance entre joueur et centre du territoire
+                    private _distance = _playerPos distance _position;
                     
-                    if ((_playerPos distance _position) < _radius && _state == "enemy") exitWith {
-                        _inEnemyTerritory = true;
+                    if (_distance < _radius) then {
+                        _inTerritory = true;
+                        _territoryState = _state;
                         _territoryIndex = _forEachIndex;
-                        diag_log format ["[TERRITOIRE] Joueur %1 TROUVÉ en territoire hostile: %2", _playerName, _name];
+                        _territoryName = _name;
+                        diag_log format ["[TERRITOIRE] Joueur %1 est dans le territoire %2 (état: %3) à distance %4m", 
+                            _playerName, _name, _state, _distance];
+                        break; // Sortir de la boucle forEach si un territoire est trouvé
                     };
                 } forEach OPEX_territories;
                 
-                // Si le joueur est dans un territoire ennemi, offrir la mission
-                if (_inEnemyTerritory && _territoryIndex != -1) then {
-                    private _territoryData = OPEX_territories select _territoryIndex;
-                    private _name = _territoryData select 0;
+                // Si le joueur est dans un territoire
+                if (_inTerritory && _territoryIndex != -1) then {
+                    // Vérifier si c'est un nouveau territoire
+                    private _lastTerritory = _player getVariable ["lastVisitedTerritory", ""];
                     
-                    // Notification directe
-                    systemChat format ["Territoire hostile: %1", _name];
+                    diag_log format ["[TERRITOIRE] Joueur %1: Territoire actuel=%2, Dernier territoire=%3", 
+                        _playerName, _territoryName, _lastTerritory];
                     
-                    // Vérifier si une mission est déjà en cours pour ce territoire
-                    private _taskID = format ["liberate_%1", _territoryIndex];
-                    diag_log format ["[TERRITOIRE] Vérification si tâche %1 existe déjà", _taskID];
-                    
-                    private _taskExists = [_taskID] call BIS_fnc_taskExists;
-                    diag_log format ["[TERRITOIRE] Tâche existe: %1", _taskExists];
-                    
-                    if (!_taskExists) then {
-                        diag_log "[TERRITOIRE] Offre de mission de libération";
-                        // Proposer mission de libération
-                        ["globalChat", format["Vous êtes entré dans un territoire hostile: %1", _name]] remoteExec ["Gemini_fnc_globalChat", _player];
+                    if (_lastTerritory != _territoryName) then {
+                        // Marquer le nouveau territoire
+                        _player setVariable ["lastVisitedTerritory", _territoryName, true];
+                        diag_log format ["[TERRITOIRE] Nouveau territoire pour %1: %2 (état: %3)", 
+                            _playerName, _territoryName, _territoryState];
                         
-                        // Offrir la mission avec délai pour éviter spam
-                        if (isNil {_player getVariable "lastLiberationOffer"} || 
-                            {time - (_player getVariable "lastLiberationOffer") > 300}) then {
-                            
-                            _player setVariable ["lastLiberationOffer", time];
-                            diag_log format ["[TERRITOIRE] Préparation d'offre de mission pour %1", _playerName];
-                            
-                            [_player, _territoryIndex] spawn {
-                                params ["_unit", "_idx"];
-                                diag_log format ["[TERRITOIRE] Délai avant offre de mission pour index %1", _idx];
+                        // Actions selon l'état du territoire
+                        switch (_territoryState) do {
+                            case "unknown": {
+                                diag_log format ["[TERRITOIRE] Envoi message unknown pour %1 dans %2", _playerName, _territoryName];
                                 
-                                // Attendre un peu avant d'offrir la mission
-                                sleep 5;
+                                // Utiliser plusieurs méthodes pour garantir que le message arrive
+                                [format ["<t color='#ffffff'>Territoire non renseigné: %1</t>", _territoryName]] remoteExec ["hint", _player];
                                 
-                                // Vérifier si joueur toujours dans le territoire
-                                private _territoryData = OPEX_territories select _idx;
-                                private _position = _territoryData select 1;
-                                private _radius = _territoryData select 2;
-                                private _distance = _unit distance _position;
+                                // Message dans le chat du système
+                                ["Territoire non renseigné: " + _territoryName] remoteExec ["systemChat", _player];
                                 
-                                diag_log format ["[TERRITOIRE] Après délai - Joueur à %1m du centre (rayon %2m)", _distance, _radius];
-                                
-                                if (_distance < _radius) then {
-                                    // Offrir mission de libération
-                                    diag_log format ["[TERRITOIRE] Exécution de la mission de libération pour territoire %1", _idx];
-                                    [_idx] remoteExec ["Gemini_fnc_offerLiberationMission", 2];
-                                    systemChat "Mission de libération offerte!";
-                                } else {
-                                    diag_log "[TERRITOIRE] Joueur sorti du territoire - mission annulée";
-                                };
+                                // Message global via la fonction dédiée
+                                ["globalChat", format ["Nous n'avons aucune information sur %1. Contactez le PC avant d'approcher.", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
                             };
-                        } else {
-                            diag_log "[TERRITOIRE] Mission récemment offerte - attente du délai";
+                            
+                            case "enemy": {
+                                // Code pour territoire enemy...
+                                diag_log format ["[TERRITOIRE] Envoi message enemy pour %1 dans %2", _playerName, _territoryName];
+                                ["Territoire hostile: " + _territoryName] remoteExec ["systemChat", _player];
+                                ["globalChat", format ["Attention, vous êtes entré dans un territoire hostile: %1", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
+                            };
+                            
+                            case "neutral": {
+                                // Code pour territoire neutral...
+                                diag_log format ["[TERRITOIRE] Envoi message neutral pour %1 dans %2", _playerName, _territoryName];
+                                ["Territoire neutre: " + _territoryName] remoteExec ["systemChat", _player];
+                                ["globalChat", format ["Vous êtes entré dans le territoire neutre de %1. Les locaux semblent pacifiques.", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
+                            };
+                            
+                            case "friendly": {
+                                // Code pour territoire friendly...
+                                diag_log format ["[TERRITOIRE] Envoi message friendly pour %1 dans %2", _playerName, _territoryName];
+                                ["Territoire ami: " + _territoryName] remoteExec ["systemChat", _player];
+                                ["globalChat", format ["Vous êtes entré dans le territoire ami de %1. Nos forces y assurent la sécurité.", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
+                            };
                         };
-                    } else {
-                        diag_log "[TERRITOIRE] Mission déjà en cours pour ce territoire";
                     };
                 };
             } forEach allPlayers;
             
-            sleep 10; // Vérification périodique
+            // Attendre avant la prochaine vérification
+            sleep 5;
         };
     };
 };
-
+*/ 
 
 
 // MISSION DE NETTOYAGE - ÉLIMINER LES ENNEMIS
