@@ -69,21 +69,27 @@ Gemini_fnc_initTerritorySystem = {
         diag_log format ["[TERRITOIRE] %1 territoires à traiter pour création de chefs", count _territoriesToProcess];
         
         // Traiter chaque territoire séquentiellement pour éviter les conflits
-        {
-            _x params ["_index", "_name", "_state"];
-            diag_log format ["[TERRITOIRE] Traitement du territoire %1 (index %2) pour création de chef", _name, _index];
-            
-            private _chief = [_index] call Gemini_fnc_spawnVillageChief;
-            
-            if (!isNull _chief) then {
-                diag_log format ["[TERRITOIRE] Chef créé pour territoire %1", _name];
-            } else {
-                diag_log format ["[TERRITOIRE] ÉCHEC: Aucun chef créé pour territoire %1", _name];
-            };
-            
-            // Pause entre chaque création pour stabilité
-            sleep 2;
-        } forEach _territoriesToProcess;
+{
+    _x params ["_index", "_name", "_state"];
+    diag_log format ["[TERRITOIRE] Traitement du territoire %1 (index %2) pour création de chef", _name, _index];
+    
+    // Utilisez spawn au lieu de call pour éviter l'erreur de pile
+    [_index] spawn {
+        params ["_idx"];
+        private _chief = [_idx] spawn Gemini_fnc_spawnVillageChief;
+        
+        if (!isNull _chief) then {
+            private _territoryData = OPEX_territories select _idx;
+            diag_log format ["[TERRITOIRE] Chef créé pour territoire %1", _territoryData select 0];
+        } else {
+            private _territoryData = OPEX_territories select _idx;
+            diag_log format ["[TERRITOIRE] ÉCHEC: Aucun chef créé pour territoire %1", _territoryData select 0];
+        };
+    };
+    
+    // Pause entre chaque création pour stabilité
+    sleep 3;
+} forEach _territoriesToProcess;
         
         diag_log "[TERRITOIRE] Initialisation des chefs terminée";
     };
@@ -137,13 +143,7 @@ Gemini_fnc_createTerritory = {
     // Index du territoire nouvellement créé
     private _index = count OPEX_territories - 1;
     
-// Spawner le chef de village UNIQUEMENT si c'est une zone neutre ou amie (pas unknown)
-/* if (_state == "neutral" || _state == "friendly") then {
-    diag_log format ["[TERRITOIRE] Territoire non-hostile: %1 - Tentative de spawn chef", _name];
-    [_index] call Gemini_fnc_spawnVillageChief;
-} else {
-    diag_log format ["[TERRITOIRE] Territoire %1 avec état %2 - Pas de spawn de chef", _name, _state];
-}; */
+
     
     _territoryData
 };
@@ -281,7 +281,11 @@ Gemini_fnc_updateTerritoryState = {
         if ((_currentState == "friendly" || _currentState == "neutral") && (_oldState != "friendly" && _oldState != "neutral")) then {
             if (isNull (_territoryData select 5)) then {
                 diag_log format ["[TERRITOIRE] Création forcée d'un chef pour %1", _name];
-                [_territoryIndex] call Gemini_fnc_spawnVillageChief;
+                [_territoryIndex] spawn {
+    params ["_idx"];
+    sleep 0.1;
+    [_idx] spawn Gemini_fnc_spawnVillageChief;
+};
             };
         };
         

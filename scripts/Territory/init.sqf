@@ -3,6 +3,15 @@
     Description: Initialisation du système de contrôle territorial
 */
 
+// Vérifier si ACE est actif
+OPEX_ace_enabled = isClass (configFile >> "CfgPatches" >> "ace_main");
+if (OPEX_ace_enabled) then {
+    diag_log "[TERRITOIRE] ACE détecté, activation des fonctionnalités ACE";
+} else {
+    diag_log "[TERRITOIRE] ACE non détecté, utilisation des interactions standards";
+};
+
+
 // Compilation des fonctions de base
 Gemini_fnc_initTerritorySystem = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryCore.sqf";
 Gemini_fnc_createTerritory = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryCore.sqf";
@@ -17,15 +26,8 @@ Gemini_fnc_openChiefDialog = compile preprocessFileLineNumbers "scripts\Territor
 Gemini_fnc_handleChiefDeath = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 
 // Compilation des fonctions de mission
-Gemini_fnc_clearAreaMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_findCacheMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_rescueChiefMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_offerLiberationMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_offerStabilizationMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_offerSecurityMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_offerAdvancedMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_spawnEnemiesForMission = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
-Gemini_fnc_spawnTerritoryAttackers = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryMissions.sqf";
+// consulter le initMissions
+
 // Utiliser uniquement la version standalone
 Gemini_fnc_monitorPlayerInTerritory = compile preprocessFileLineNumbers "scripts\Territory\fnc_monitorPlayerInTerritory.sqf";
 
@@ -38,7 +40,8 @@ Gemini_fnc_getRecentIncidents = compile preprocessFileLineNumbers "scripts\Terri
 Gemini_fnc_getReputationEffect = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
 
 
-
+// Charger les missions territoriales
+execVM "scripts\Territory\Missions\initMissions.sqf";
 
 // Après avoir compilé toutes les fonctions
 diag_log "[TERRITOIRE] Fonctions compilées avec succès";

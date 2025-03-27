@@ -123,26 +123,71 @@ Gemini_fnc_monitorPlayerInTerritory = {
                         // Action selon l'état avec logs pour notifications
                         switch (_territoryState) do {
                             case "unknown": {
-                                // Messages pour territoire inconnu avec confirmation
-                                private _message = format ["<t size='1.2' color='#FF8C00' align='center'>TERRITOIRE INCONNU: %1</t><br/><t align='center'>Contactez le PC avant d'approcher.</t>", _territoryName];
-                                
-                                // Utiliser plusieurs méthodes pour s'assurer que le message passe
-                                [_message, 0.5, 0.2, 5, 0] remoteExec ["BIS_fnc_dynamicText", _player];
-                                diag_log format ["[TERRITOIRE] NOTIF dynamicText envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
-                                
-                                [format ["Territoire non renseigné: %1", _territoryName]] remoteExec ["systemChat", _player];
-                                diag_log format ["[TERRITOIRE] NOTIF systemChat envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
-                                
-                                ["globalChat", format ["QG à Patrouille: Nous n'avons aucune information sur %1. Contactez le PC pour obtenir des renseignements avant de poursuivre.", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
-                                diag_log format ["[TERRITOIRE] NOTIF globalChat envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
-                                
+    // Messages pour territoire inconnu avec confirmation
+    private _message = format ["<t size='1.2' color='#FF8C00' align='center'>TERRITOIRE INCONNU: %1</t><br/><t align='center'>Contactez le PC avant d'approcher.</t>", _territoryName];
+    
+    // Utiliser plusieurs méthodes pour s'assurer que le message passe
+    [_message, 0.5, 0.2, 5, 0] remoteExec ["BIS_fnc_dynamicText", _player];
+    diag_log format ["[TERRITOIRE] NOTIF dynamicText envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
+    
+    [format ["Territoire non renseigné: %1", _territoryName]] remoteExec ["systemChat", _player];
+    diag_log format ["[TERRITOIRE] NOTIF systemChat envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
+    
+    ["globalChat", format ["QG à Patrouille: Nous n'avons aucune information sur %1. Contactez le PC pour obtenir des renseignements avant de poursuivre.", _territoryName]] remoteExec ["Gemini_fnc_globalChat", _player];
+    diag_log format ["[TERRITOIRE] NOTIF globalChat envoyée à %1 pour %2 (inconnu)", _playerName, _territoryName];
+    
+    // Ajouter l'action de communication radio avec plus de sécurité
+if (OPEX_ace_enabled) then {
+    // Ajouter un léger délai pour s'assurer que les variables sont à jour
+    [_territoryIndex, _player, _territoryName] spawn {
+        params ["_territoryIndex", "_player", "_territoryName"];
+        sleep 2; // Petit délai pour stabilité
+        
+        // S'assurer que l'action est ajoutée uniquement au joueur concerné
+        [_territoryIndex, _player] remoteExec ["Gemini_fnc_initiateRadioCommunication", _player];
+        diag_log format ["[TERRITOIRE][RADIO] RemoteExec de initiateRadioCommunication envoyé à %1 pour territoire %2", name _player, _territoryIndex];
+        
+        // Notification plus visible
+        private _message = format ["<t size='1.2' color='#FFFF00'>ASSISTANCE DISPONIBLE</t><br/>Utilisez votre menu ACE (touche Windows + T)<br/>Pour contacter le QG à propos de %1", _territoryName];
+        [_message, 0.5, 0.3, 10, 0] remoteExec ["BIS_fnc_dynamicText", _player];
+    };
+} else {
+    // Alternative sans ACE - peut-être une action standard ou un message
+    diag_log format ["[TERRITOIRE][RADIO] ACE non détecté, pas d'action ACE pour joueur %1", name _player];
+    
+    // Créer une action standard si ACE n'est pas disponible
+    private _actionText = format ["Contacter le PC à propos de %1", _territoryName];
+    private _actionID = _player addAction [
+        _actionText,
+        {
+            params ["_target", "_caller", "_actionId", "_arguments"];
+            _arguments params ["_tIndex"];
+            [_caller, _tIndex] spawn Gemini_fnc_startRadioSequence;
+        },
+        [_territoryIndex],
+        6,
+        true,
+        true,
+        "",
+        "true",
+        3
+    ];
+    
+    // Stocker l'ID de l'action pour la supprimer plus tard
+    _player setVariable ["OPEX_radioActionID", _actionID, true];
+    
+    ["globalChat", format ["QG à %1: Utilisez votre menu d'action pour nous contacter au sujet de cette zone.", name _player]] remoteExec ["Gemini_fnc_globalChat", _player];
+};
+
+    
+    
                                 // Démarrer suivi de pénalité
                                 [_player, _territoryIndex, _territoryName] spawn {
                                     params ["_unit", "_idx", "_name"];
                                     
                                     // Paramètres de pénalité
-                                    private _penaltyDelay = 15; // 15 secondes avant pénalité
-                                    private _warningTime = 5; // Avertissement 5 secondes avant
+                                    private _penaltyDelay = 60; // 15 secondes avant pénalité
+                                    private _warningTime = 10; // Avertissement 5 secondes avant
                                     private _entryTime = time;
                                     private _warned = false;
                                     
@@ -227,7 +272,7 @@ Gemini_fnc_monitorPlayerInTerritory = {
                                     // Si pas de chef, en créer un
                                     if (isNull _chief) then {
                                         diag_log format ["[TERRITOIRE] Création dynamique d'un chef pour %1 (neutre)", _name];
-                                        [_index] call Gemini_fnc_spawnVillageChief;
+                                        [_index] spawn Gemini_fnc_spawnVillageChief;
                                     } else {
                                         diag_log format ["[TERRITOIRE] Chef déjà existant pour %1: %2", _name, _chief];
                                     };
@@ -259,7 +304,7 @@ Gemini_fnc_monitorPlayerInTerritory = {
                                     // Si pas de chef, en créer un
                                     if (isNull _chief) then {
                                         diag_log format ["[TERRITOIRE] Création dynamique d'un chef pour %1 (ami)", _name];
-                                        [_index] call Gemini_fnc_spawnVillageChief;
+                                        [_index] spawn Gemini_fnc_spawnVillageChief;
                                     } else {
                                         diag_log format ["[TERRITOIRE] Chef déjà existant pour %1: %2", _name, _chief];
                                     };
@@ -331,6 +376,22 @@ if (_territoryLeftIndex != -1) then {
             };
         };
         
+
+// Supprimer toutes les actions de communication radio
+if (OPEX_ace_enabled) then {
+    [_player] remoteExec ["Gemini_fnc_removeRadioCommunication", _player];
+    diag_log format ["[TERRITOIRE][RADIO] Suppression des actions ACE pour joueur %1 qui quitte le territoire", name _player];
+} else {
+    // Supprimer l'action standard si existante
+    private _actionID = _player getVariable ["OPEX_radioActionID", -1];
+    if (_actionID != -1) then {
+        _player removeAction _actionID;
+        _player setVariable ["OPEX_radioActionID", -1, true];
+    };
+};
+
+
+
         // Réinitialiser les variables
         _player setVariable ["lastVisitedTerritory", "", true];
         _player setVariable ["territoryWarningReceived", false, true];

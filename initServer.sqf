@@ -71,7 +71,7 @@ execVM "scripts\Territory\init.sqf";
     diag_log "[TERRITOIRE] Fonctions de base compilées, chargement des interactions chef...";
     
     // 3. Charger les interactions du chef à ce moment-là
-    execVM "scripts\Territory\fnc_chiefInteractions_simple.sqf";
+   // execVM "scripts\Territory\fnc_chiefInteractions_simple.sqf";
     
     // 4. Attendre que les interactions du chef soient compilées
     waitUntil {!isNil "Gemini_fnc_openChiefMissionDialog"};

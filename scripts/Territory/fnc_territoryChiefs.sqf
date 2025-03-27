@@ -5,6 +5,8 @@
 
 // FONCTION: Spawn d'un chef de village
 Gemini_fnc_spawnVillageChief = {
+    if (missionNamespace getVariable ["OPEX_chief_spawning", false]) exitWith {objNull};
+missionNamespace setVariable ["OPEX_chief_spawning", true];
 
     if (!isServer) exitWith {
     diag_log "[TERRITOIRE] Tentative de spawn d'un chef depuis un client - ignoré";
@@ -132,6 +134,8 @@ Gemini_fnc_spawnVillageChief = {
     
     diag_log format ["[TERRITOIRE] Chef créé avec succès: %1 à position %2", _chief, getPos _chief];
     
+missionNamespace setVariable ["OPEX_chief_spawning", false];
+    
     _chief
 };
 
@@ -256,7 +260,7 @@ Gemini_fnc_handleChiefDeath = {
         [_territoryIndex, "", _newSecurity] call Gemini_fnc_updateTerritoryState;
         
         // Spawner des attaquants ennemis
-        [_territoryIndex] spawn Gemini_fnc_spawnTerritoryAttackers;
+        [_territoryIndex] spawn Gemini_fnc_territoryAttack ;
     };
     
     // Planifier le spawn d'un nouveau chef après un délai
@@ -274,7 +278,11 @@ Gemini_fnc_handleChiefDeath = {
         if (_currentState == "neutral" || _currentState == "friendly") then {
             // Créer un nouveau chef
             diag_log format ["[TERRITOIRE] Spawn d'un nouveau chef pour %1 après mort", _currentData select 0];
-            [_idx] call Gemini_fnc_spawnVillageChief;
+            [_idx] spawn {
+    params ["_idx"];
+    sleep 0.1;
+    [_idx] spawn Gemini_fnc_spawnVillageChief;
+};
             
             // Notification
             ["globalChat", format ["Un nouveau chef a pris ses fonctions à %1.", _currentData select 0]] remoteExec ["Gemini_fnc_globalChat", 0];
