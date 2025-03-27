@@ -167,7 +167,7 @@ Gemini_fnc_createTerritoryMarkers = {
 private _color = switch (_state) do {
     case "friendly": {"ColorBLUFOR"};
     case "neutral": {"ColorCIV"};
-    case "unknown": {"ColorGrey"}; //   "ColorGrey" à "ColorWhite"
+    case "unknown": {"Color6_FD_F"}; //   "Color6_FD_F" à "ColorWhite"
     default {"ColorOPFOR"};
 };
     
@@ -253,7 +253,7 @@ Gemini_fnc_updateTerritoryState = {
     private _color = switch (_currentState) do {
         case "friendly": {"ColorBLUFOR"};
         case "neutral": {"ColorCIV"};
-        case "unknown": {"ColorGrey"};
+        case "unknown": {"Color6_FD_F"};
         default {"ColorOPFOR"};
     };
     
