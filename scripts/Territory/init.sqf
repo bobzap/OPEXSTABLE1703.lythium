@@ -13,13 +13,13 @@ if (OPEX_ace_enabled) then {
 
 // SECTION 1: CHARGEMENT DE LA CONFIGURATION
 // Compilation et chargement de la configuration centralisée (doit être en premier)
-Gemini_fnc_initTerritoryConfig = compile preprocessFileLineNumbers "scripts\Territory\Config\fnc_territoryConfig.sqf";
-Gemini_fnc_getTerritoryMarkerColor = compile preprocessFileLineNumbers "scripts\Territory\Config\fnc_territoryConfig.sqf";
-Gemini_fnc_getTerritoryTextColor = compile preprocessFileLineNumbers "scripts\Territory\Config\fnc_territoryConfig.sqf";
+Gemini_fnc_initTerritoryConfig = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryConfig.sqf";
+Gemini_fnc_getTerritoryMarkerColor = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryConfig.sqf";
+Gemini_fnc_getTerritoryTextColor = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryConfig.sqf";
 // Initialiser la configuration immédiatement
 if (isServer) then {[] call Gemini_fnc_initTerritoryConfig};
 
-// SECTION 2: SYSTÈME DE MESSAGERIE
+// SECTION 2: SYSTÈME DE MESSAGERIE ET COMMUNICATIONS
 // Compilation des fonctions de messagerie
 Gemini_fnc_territoryNotification = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_messagingSystem.sqf";
 Gemini_fnc_territorySystemChat = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_messagingSystem.sqf";
@@ -29,6 +29,35 @@ Gemini_fnc_territoryExitNotification = compile preprocessFileLineNumbers "script
 Gemini_fnc_territoryPenaltyWarning = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_messagingSystem.sqf";
 Gemini_fnc_territoryPenaltyNotification = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_messagingSystem.sqf";
 Gemini_fnc_radioAvailableNotification = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_messagingSystem.sqf";
+
+// Compilation des fonctions du système radio
+// Core
+Gemini_fnc_canUseRadio = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+Gemini_fnc_setRadioLock = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+Gemini_fnc_addToAuthorizedTerritories = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+Gemini_fnc_isTerritoryAuthorized = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+Gemini_fnc_getHQResponse = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+Gemini_fnc_simulateRadioDelay = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioCore.sqf";
+
+// Actions
+Gemini_fnc_initRadioAction = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_addACERadioAction = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_addStandardRadioAction = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_removeAllRadioActions = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_removeRadioAction = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_addMissionAcceptAction = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+
+// Dialogue
+Gemini_fnc_startRadioDialog = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioDialog.sqf";
+Gemini_fnc_playerToPlayerRadio = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioDialog.sqf";
+Gemini_fnc_hqAlert = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioDialog.sqf";
+
+// Missions
+Gemini_fnc_offerMissionViaRadio = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioMissions.sqf";
+Gemini_fnc_acceptMissionViaRadio = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioMissions.sqf";
+Gemini_fnc_reportMissionCompletion = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioMissions.sqf";
+Gemini_fnc_requestSupport = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioMissions.sqf";
+
 
 // SECTION 3: FONCTIONS DE BASE
 // Compilation des fonctions de base du système territorial
