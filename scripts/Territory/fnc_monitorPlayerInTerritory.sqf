@@ -144,7 +144,7 @@ if (OPEX_ace_enabled) then {
         sleep 2; // Petit délai pour stabilité
         
         // S'assurer que l'action est ajoutée uniquement au joueur concerné
-        [_territoryIndex, _player] remoteExec ["Gemini_fnc_initiateRadioCommunication", _player];
+        [_player, _territoryIndex] remoteExec ["Gemini_fnc_initRadioAction", _player];
         diag_log format ["[TERRITOIRE][RADIO] RemoteExec de initiateRadioCommunication envoyé à %1 pour territoire %2", name _player, _territoryIndex];
         
         // Notification plus visible

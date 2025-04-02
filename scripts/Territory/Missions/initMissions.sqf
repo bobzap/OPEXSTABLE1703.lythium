@@ -10,9 +10,9 @@ Gemini_fnc_offerNeutralMission = compile preprocessFileLineNumbers "scripts\Terr
 Gemini_fnc_offerFriendlyMission = compile preprocessFileLineNumbers "scripts\Territory\Missions\fnc_missionManager.sqf";
 
 // Compilation des fonctions de communication radio
-Gemini_fnc_initiateRadioCommunication = compile preprocessFileLineNumbers "scripts\Territory\Missions\Unknown\fnc_radioCommunication.sqf";
-Gemini_fnc_startRadioSequence = compile preprocessFileLineNumbers "scripts\Territory\Missions\Unknown\fnc_radioCommunication.sqf";
-Gemini_fnc_simpleEliminationMission = compile preprocessFileLineNumbers "scripts\Territory\Missions\Unknown\fnc_radioCommunication.sqf";
+Gemini_fnc_initiateRadioCommunication = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioActions.sqf";
+Gemini_fnc_startRadioSequence = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioDialog.sqf";
+Gemini_fnc_simpleEliminationMission = compile preprocessFileLineNumbers "scripts\Territory\Communications\fnc_radioMissions.sqf";
 
 // Déplacer les fonctions existantes aux nouveaux emplacements
 Gemini_fnc_clearAreaMission = compile preprocessFileLineNumbers "scripts\Territory\Missions\Enemy\fnc_clearAreaMission.sqf";

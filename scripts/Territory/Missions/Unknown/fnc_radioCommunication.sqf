@@ -1,7 +1,11 @@
 /*
-    Fichier: fnc_radioCommunication.sqf
-    Description: Système de communication radio avec le PC pour zones inconnues
-*/
+
+
+
+
+    //Fichier: fnc_radioCommunication.sqf
+    //Description: Système de communication radio avec le PC pour zones inconnues
+
 
 // Variables globales pour la gestion du statut radio
 if (isServer) then {
@@ -422,3 +426,6 @@ Gemini_fnc_simpleEliminationMission = {
         ["globalChat", "Insurgé éliminé. Mission accomplie."] remoteExec ["Gemini_fnc_globalChat", 0];
     };
 };
+
+
+*/

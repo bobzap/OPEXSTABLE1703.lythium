@@ -78,6 +78,17 @@ Gemini_fnc_handleChiefDeath = compile preprocessFileLineNumbers "scripts\Territo
 // Compilation des fonctions de monitoring de territoire
 Gemini_fnc_monitorPlayerInTerritory = compile preprocessFileLineNumbers "scripts\Territory\fnc_monitorPlayerInTerritory.sqf";
 
+// Nouvelles fonctions modulaires de détection
+Gemini_fnc_initTerritoryMonitor = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_monitorInit.sqf";
+Gemini_fnc_runTerritoryMonitor = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_monitorInit.sqf";
+Gemini_fnc_checkPlayerTerritory = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_monitorInit.sqf";
+
+Gemini_fnc_handleTerritoryEnter = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_territoryEnter.sqf";
+Gemini_fnc_handleTerritoryExit = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_territoryExit.sqf";
+Gemini_fnc_handleChiefOnExit = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_territoryExit.sqf";
+
+Gemini_fnc_startPenaltyTracking = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_penaltySystem.sqf";
+Gemini_fnc_applyTerritoryPenalty = compile preprocessFileLineNumbers "scripts\Territory\Detection\fnc_penaltySystem.sqf";
 // SECTION 6: FONCTIONS D'INTERACTION AVEC CHEF
 // Compilation des fonctions d'interaction du chef de village
 Gemini_fnc_openChiefMissionDialog = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
@@ -111,15 +122,16 @@ diag_log "[TERRITOIRE] Fonctions compilées avec succès";
     
     sleep 5; // Petit délai pour s'assurer que tout est prêt
     
+ // Utiliser le nouveau système de surveillance si disponible, sinon utiliser l'ancien
+if (!isNil "Gemini_fnc_initTerritoryMonitor") then {
+    diag_log "[TERRITOIRE] Utilisation du système modulaire de surveillance";
+    [] call Gemini_fnc_initTerritoryMonitor;
+} else {
     if (!isNil "Gemini_fnc_monitorPlayerInTerritory") then {
-        diag_log "[TERRITOIRE] FORCE: Fonction monitorPlayerInTerritory trouvée, exécution...";
+        diag_log "[TERRITOIRE] Utilisation du système monolithique de surveillance";
         [] spawn Gemini_fnc_monitorPlayerInTerritory;
-        if (OPEX_territory_debug) then {
-            systemChat "DEBUG: Moniteur territorial lancé!";
-        };
-        diag_log "[TERRITOIRE] FORCE: Moniteur lancé!";
     } else {
-        diag_log "[TERRITOIRE] ERREUR GRAVE: Fonction monitorPlayerInTerritory non trouvée!";
+        diag_log "[TERRITOIRE] ERREUR GRAVE: Aucune fonction de surveillance trouvée!";
         if (OPEX_territory_debug) then {
             systemChat "ERREUR: Moniteur territorial non trouvé!";
         };

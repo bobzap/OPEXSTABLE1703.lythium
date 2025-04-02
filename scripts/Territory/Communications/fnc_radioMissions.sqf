@@ -260,3 +260,91 @@ Gemini_fnc_requestSupport = {
 if (isServer) then {
     diag_log "[TERRITOIRE][RADIO] Module radioMissions initialisé";
 };
+
+// Mission simple d'élimination
+Gemini_fnc_simpleEliminationMission = {
+    params [["_territoryIndex", -1, [0]]];
+    
+    // Vérifier que nous sommes sur le serveur
+    if (!isServer) exitWith {
+        diag_log "[TERRITOIRE][MISSION] Tentative de création de mission depuis un client - ignoré";
+    };
+    
+    diag_log format ["[TERRITOIRE][MISSION] Création de mission d'élimination pour territoire %1", _territoryIndex];
+    
+    private _territoryData = OPEX_territories select _territoryIndex;
+    private _territoryName = _territoryData select 0;
+    private _position = _territoryData select 1;
+    private _radius = _territoryData select 2;
+    
+    // Créer un objectif de mission
+    private _taskID = format ["eliminate_%1", _territoryIndex];
+    private _taskDesc = format ["Éliminer l'insurgé armé qui se cache à %1.", _territoryName];
+    private _taskTitle = format ["Élimination: %1", _territoryName];
+    
+    [
+        OPEX_friendly_side1,
+        _taskID,
+        [_taskDesc, _taskTitle, ""],
+        _position,
+        "CREATED",
+        1,
+        true,
+        "kill"
+    ] call BIS_fnc_taskCreate;
+    
+    // Trouver une position dans un bâtiment pour l'insurgé
+    private _buildings = nearestObjects [_position, ["House"], _radius];
+    private _insurgentPos = _position;
+    private _foundBuilding = false;
+    
+    if (count _buildings > 0) then {
+        private _building = selectRandom _buildings;
+        private _buildingPositions = _building buildingPos -1;
+        
+        if (count _buildingPositions > 0) then {
+            _insurgentPos = selectRandom _buildingPositions;
+            _foundBuilding = true;
+        };
+    };
+    
+    // Créer l'insurgé
+    private _group = createGroup OPEX_enemy_side1;
+    private _insurgent = _group createUnit [selectRandom OPEX_enemy_units, _insurgentPos, [], 0, "NONE"];
+    
+    // Configurer l'insurgé
+    _insurgent setUnitPos "UP";
+    _insurgent disableAI "PATH";
+    if (_foundBuilding) then {
+        _insurgent setDir (random 360);
+    } else {
+        // Trouver une position aléatoire si pas de bâtiment
+        _insurgentPos = [_position, 10, _radius * 0.5, 3, 0, 20, 0] call BIS_fnc_findSafePos;
+        _insurgent setPos _insurgentPos;
+    };
+    
+    diag_log format ["[TERRITOIRE][MISSION] Insurgé créé à la position %1", getPos _insurgent];
+    
+    // Ajouter surveillance de mission
+    [_taskID, _insurgent] spawn {
+        params ["_taskID", "_insurgent"];
+        
+        // Vérifier que nous sommes sur le serveur
+        if (!isServer) exitWith {};
+        
+        // Attendre que l'insurgé soit mort
+        waitUntil {
+            sleep 5;
+            !alive _insurgent
+        };
+        
+        diag_log format ["[TERRITOIRE][MISSION] Insurgé éliminé, mission %1 terminée", _taskID];
+        
+        // Mission réussie
+        [_taskID, "SUCCEEDED"] call BIS_fnc_taskSetState;
+        
+        // Récompense
+        ["taskSucceeded"] call Gemini_fnc_updateStats;
+        ["globalChat", "Insurgé éliminé. Mission accomplie."] remoteExec ["Gemini_fnc_globalChat", 0];
+    };
+};
