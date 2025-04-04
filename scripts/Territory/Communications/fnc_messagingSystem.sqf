@@ -88,11 +88,17 @@ Gemini_fnc_territoryGlobalChat = {
     
     // Log si en mode debug
     if (OPEX_territory_debug) then {
-        private _targetName = if (isNull _target) then {"all"} else {
-            if (typeName _target == "OBJECT") then {name _target} else {"multiple"}
+    private _targetName = if (isNull _target) then {
+        "all"
+    } else {
+        if (typeName _target == "OBJECT") then {
+            name _target
+        } else {
+            "multiple"
         };
-        diag_log format ["[TERRITOIRE][GLOBAL] Envoyé à %1: %2", _targetName, _formattedMessage];
     };
+    diag_log format ["[TERRITOIRE][NOTIF] Envoyé à %1: %2 - %3", _targetName, _title, _message];
+};
 };
 
 // Fonction complète pour toutes les notifications d'entrée territoire

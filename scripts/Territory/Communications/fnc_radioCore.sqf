@@ -108,12 +108,15 @@ Gemini_fnc_getHQResponse = {
     
     // Vérifier l'index
     if (_territoryIndex < 0 || _territoryIndex >= count OPEX_territories) exitWith {
+        diag_log "[TERRITOIRE][RADIO] getHQResponse: Index de territoire invalide";
         ["Données indisponibles sur ce secteur. Restez vigilants.", "unknown"]
     };
     
     private _territoryData = OPEX_territories select _territoryIndex;
     private _actualState = _territoryData select 3;
     private _territoryName = _territoryData select 0;
+    
+    diag_log format ["[TERRITOIRE][RADIO] getHQResponse: Territoire %1, état: %2", _territoryName, _actualState];
     
     private _response = switch (_actualState) do {
         case "enemy": {
@@ -130,6 +133,7 @@ Gemini_fnc_getHQResponse = {
         };
     };
     
+    diag_log format ["[TERRITOIRE][RADIO] getHQResponse: Réponse: %1", _response];
     _response
 };
 

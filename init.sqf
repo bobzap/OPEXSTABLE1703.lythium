@@ -89,7 +89,11 @@ diag_log "[TERRITOIRE] Configuration du moniteur territorial depuis init.sqf pri
     diag_log "[TERRITOIRE] Vérification si moniteur déjà actif...";
     if (isNil "OPEX_territory_monitoring_active") then {
         diag_log "[TERRITOIRE] Démarrage du moniteur territorial depuis init.sqf";
-        [] spawn Gemini_fnc_monitorPlayerInTerritory;
+        if (!isNil "Gemini_fnc_initTerritoryMonitor") then {
+            [] spawn Gemini_fnc_initTerritoryMonitor;
+        } else {
+            diag_log "[TERRITOIRE][ERREUR] Fonction de monitoring non trouvée!";
+        };
     } else {
         diag_log "[TERRITOIRE] Moniteur territorial déjà actif, aucune action nécessaire";
     };
