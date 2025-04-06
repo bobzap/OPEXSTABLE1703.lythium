@@ -85,8 +85,12 @@ Gemini_fnc_startRadioDialog = {
         sleep _analyzeTime;
         
         // Obtenir la réponse du QG selon l'état du territoire
-        private _responseData = [_territoryIndex] call Gemini_fnc_getHQResponse;
-        _responseData params ["_responseText", "_responseState"];
+        // Dans la fonction startRadioSequence, autour de la ligne 89
+private _responseData = [_territoryIndex] call Gemini_fnc_getHQResponse;
+if (isNil "_responseData" || {!(_responseData isEqualType [])}) then {
+    _responseData = ["Données indisponibles. Problème de communication.", "unknown"];
+};
+_responseData params ["_responseText", "_responseState"];
         
         // Envoyer la réponse
         [_player, "QG", "[Vous]", _responseText] call Gemini_fnc_territoryGlobalChat;
@@ -210,7 +214,7 @@ Gemini_fnc_hqAlert = {
             default {"radio_standard"};
         };
         
-        [_target, _sound] remoteExec ["Gemini_fnc_playSoundEffect", _target];
+        [_target, _sound] remoteExecCall  ["Gemini_fnc_playSoundEffect", _target];
     };
     
     true
