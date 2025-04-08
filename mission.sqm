@@ -16,14 +16,14 @@ class EditorData
 	};
 	class LayerIndexProvider
 	{
-		nextID=2970;
+		nextID=3052;
 	};
 	class Camera
 	{
-		pos[]={3825.0737,694.68994,17725.135};
-		dir[]={-0.22958925,-0.2637853,0.93685973};
-		up[]={-0.062786072,0.96458149,0.25620425};
-		aside[]={0.97126043,0,0.23801959};
+		pos[]={3830.8423,694.68994,17748.551};
+		dir[]={-0.04854428,-0.33130723,0.94227797};
+		up[]={-0.01704569,0.94352263,0.33086872};
+		aside[]={0.99867803,-2.7401256e-08,0.051450178};
 	};
 };
 binarizationWanted=0;
@@ -24328,7 +24328,7 @@ class Mission
 								};
 							};
 							id=771;
-							atlOffset=-2.527771;
+							atlOffset=-2.4939575;
 						};
 						class Item2
 						{
@@ -25886,7 +25886,7 @@ class Mission
 								};
 							};
 							id=1097;
-							atlOffset=81.78363;
+							atlOffset=0.061767578;
 						};
 						class Item5
 						{
@@ -27421,7 +27421,7 @@ class Mission
 								};
 							};
 							id=1149;
-							atlOffset=-413.48773;
+							atlOffset=1.4678345;
 						};
 						class Item7
 						{
@@ -37762,7 +37762,7 @@ class Mission
 										};
 									};
 									id=251;
-									atlOffset=29.363464;
+									atlOffset=0.14538574;
 								};
 								class Item1
 								{
@@ -38835,11 +38835,11 @@ class Mission
 								};
 							};
 							id=250;
-							atlOffset=-0.67498779;
+							atlOffset=-0.039733887;
 						};
 					};
 					id=249;
-					atlOffset=72.326416;
+					atlOffset=77.680542;
 				};
 				class Item1
 				{
@@ -41620,7 +41620,7 @@ class Mission
 						};
 					};
 					id=2903;
-					atlOffset=-140.66;
+					atlOffset=0.15759277;
 				};
 				class Item2
 				{
@@ -46570,7 +46570,7 @@ class Mission
 				};
 			};
 			id=248;
-			atlOffset=16.55304;
+			atlOffset=52.557983;
 		};
 		class Item1
 		{
@@ -51893,7 +51893,7 @@ class Mission
 				};
 			};
 			id=3924;
-			atlOffset=-140.66;
+			atlOffset=-413.71402;
 		};
 		class Item103
 		{
@@ -54485,7 +54485,6 @@ class Mission
 				};
 			};
 			id=4066;
-			atlOffset=-140.66;
 		};
 		class Item160
 		{
