@@ -7,13 +7,15 @@
 */
 
 // Fonction pour envoyer une notification visuelle (dynamicText)
+// Dans fnc_messagingSystem.sqf, amélioration de Gemini_fnc_territoryNotification:
+// Modification de la fonction fnc_messagingSystem.sqf:
 Gemini_fnc_territoryNotification = {
     params [
-        ["_target", objNull, [objNull, 0, []]],  // Cible (joueur, côté ou array)
-        ["_title", "", [""]],                    // Titre de la notification
-        ["_message", "", [""]],                   // Message principal
-        ["_type", "info", [""]],                 // Type: info, warning, error, success
-        ["_duration", -1, [0]]                   // Durée (utilise défaut si -1)
+        ["_target", objNull, [objNull, 0, []]],
+        ["_title", "", [""]],
+        ["_message", "", [""]],
+        ["_type", "info", [""]],
+        ["_duration", -1, [0]]
     ];
     
     private _color = switch (_type) do {
@@ -23,32 +25,35 @@ Gemini_fnc_territoryNotification = {
         default {"#FFFFFF"};          // Blanc (info)
     };
     
-    // Durée par défaut selon type
+    // Durées plus longues
     if (_duration < 0) then {
         _duration = switch (_type) do {
-            case "warning": {OPEX_territory_notif_warning};
-            case "error": {OPEX_territory_notif_warning};
-            default {OPEX_territory_notif_duration};
+            case "warning": {15};
+            case "error": {15};
+            default {10};
         };
     };
     
-    // Créer le texte formaté
+    // Texte plus grand et mieux formaté
     private _formattedText = format [
-        "<t size='1.2' color='%1' align='center'>%2</t><br/><t align='center'>%3</t>",
+        "<t size='1.5' color='%1' align='center' shadow='2'>%2</t><br/><t size='1.2' align='center'>%3</t>",
         _color,
         _title,
         _message
     ];
     
-    // Envoyer la notification
-    [_formattedText, 0.5, 0.2, _duration, 0] remoteExec ["BIS_fnc_dynamicText", _target];
+    // Position en haut de l'écran, plus visible
+    [_formattedText, 0.5, 0.1, _duration, 1, 0, 7] remoteExec ["BIS_fnc_dynamicText", _target];
     
-    // Log si en mode debug
+    // Log
     if (OPEX_territory_debug) then {
-        private _targetName = if (isNull _target) then {"all"} else {
-            if (typeName _target == "OBJECT") then {name _target} else {"multiple"}
-        };
-        diag_log format ["[TERRITOIRE][NOTIF] Envoyé à %1: %2 - %3", _targetName, _title, _message];
+        diag_log format ["[TERRITOIRE][NOTIF] Envoyé à %1: %2 - %3", 
+            if (isNull _target) then {"all"} else {
+                if (typeName _target == "OBJECT") then {name _target} else {"multiple"}
+            }, 
+            _title, 
+            _message
+        ];
     };
 };
 

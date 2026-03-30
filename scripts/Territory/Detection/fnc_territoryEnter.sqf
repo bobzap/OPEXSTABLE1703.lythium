@@ -45,18 +45,24 @@ Gemini_fnc_handleTerritoryEnter = {
     // Actions spécifiques selon l'état du territoire
     diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Traitement des actions spécifiques pour état: %1", _territoryState];
     switch (_territoryState) do {
-        case "unknown": {
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'unknown'";
-            // Ajouter l'action de communication radio
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Avant remoteExec de initRadioAction";
-            [_player, _territoryIndex] remoteExec ["Gemini_fnc_initRadioAction", _player];
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Après remoteExec de initRadioAction";
-            
-            // Démarrer le suivi de pénalité (uniquement pour les territoires inconnus)
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Avant spawn de startPenaltyTracking";
-            [_player, _territoryIndex, _territoryName] spawn Gemini_fnc_startPenaltyTracking;
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Après spawn de startPenaltyTracking";
-        };
+        // Dans fnc_territoryEnter.sqf, modification:
+case "unknown": {
+    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'unknown'";
+    // Envoyer d'abord la notification d'entrée
+    [_player, _territoryName, _territoryState] call Gemini_fnc_territoryEntryNotification;
+    
+    // Attendre un délai avant d'ajouter l'action radio via spawn
+    [_player, _territoryIndex] spawn {
+        params ["_player", "_territoryIndex"];
+        sleep 3; // Attendre 3 secondes
+        
+        // Ajouter l'action radio
+        [_player, _territoryIndex] remoteExec ["Gemini_fnc_initRadioAction", _player];
+    };
+    
+    // Démarrer le suivi de pénalité 
+    [_player, _territoryIndex, _territoryName] spawn Gemini_fnc_startPenaltyTracking;
+};
         
         case "neutral": {
             diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'neutral'";

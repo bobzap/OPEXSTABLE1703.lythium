@@ -8,13 +8,14 @@
 
 // Fonction principale pour démarrer un dialogue radio
 // Dans la fonction startRadioDialog
+// Dans fnc_radioDialog.sqf, correction de startRadioDialog:
 Gemini_fnc_startRadioDialog = {
     params [
         ["_player", objNull, [objNull]],
         ["_territoryIndex", -1, [0]]
     ];
     
-    // Vérifications de sécurité
+    // Vérifications
     if (isNull _player) exitWith {
         diag_log "[TERRITOIRE][RADIO] Erreur: Joueur nul pour dialogue radio";
         false
@@ -25,24 +26,33 @@ Gemini_fnc_startRadioDialog = {
         false
     };
     
-    // Vérifier que nous sommes sur la bonne machine (client du joueur)
+    // Vérifier si nous sommes sur la bonne machine
     if (!hasInterface) exitWith {
-        diag_log "[TERRITOIRE][RADIO] Erreur: Tentative de dialogue radio sans interface";
+        diag_log "[TERRITOIRE][RADIO] Erreur: Tentative de dialogue sans interface";
         false
     };
     
-    // Utiliser ACE_player si disponible, sinon player
-    private _localPlayer = if (!isNil "ACE_player") then {ACE_player} else {player};
+    // Utiliser le joueur local
+    private _localPlayer = player;
     
     // Si le joueur n'est pas le joueur local, sortir
     if (_player != _localPlayer) exitWith {
-        diag_log format ["[TERRITOIRE][RADIO] Erreur: Tentative de dialogue sur mauvais client. Player=%1, client=%2", name _player, name _localPlayer];
+        diag_log format ["[TERRITOIRE][RADIO] Erreur: Tentative sur mauvais client. Player=%1, client=%2", name _player, name _localPlayer];
         false
     };
     
     // Vérifier si une radio est active
     if (missionNamespace getVariable ["OPEX_radioComm_active", false]) exitWith {
-        [_player, "Communication en cours", "Une autre communication radio est déjà active. Veuillez patienter.", "warning"] call Gemini_fnc_territoryNotification;
+        // Notification plus visible
+        [
+            "<t size='1.3' color='#FF0000' align='center'>COMMUNICATION EN COURS</t><br/><t align='center'>Une autre communication radio est déjà active.<br/>Veuillez patienter.</t>", 
+            0.5, 
+            0.3, 
+            10, 
+            1
+        ] call BIS_fnc_dynamicText;
+        
+        diag_log "[TERRITOIRE][RADIO] Communication déjà active - nouvelle tentative rejetée";
         false
     };
     
@@ -57,74 +67,59 @@ Gemini_fnc_startRadioDialog = {
     missionNamespace setVariable ["OPEX_radioComm_active", true, true];
     publicVariable "OPEX_radioComm_active";
     
-    // Effet audio optionnel (si disponible)
-    if (!isNil "Gemini_fnc_playSoundEffect") then {
-        [_player, "radio_start"] call Gemini_fnc_playSoundEffect;
-    };
+    // Définir le joueur comme autorisé pour éviter les pénalités pendant le dialogue
+    _player setVariable ["territoryAuthorized", true, true];
     
-    // Premier message du joueur
-    [_player, "[Vous]", "PC", format ["PC, ici patrouille. Demande SITREP sur zone: %1. Terminé.", _territoryName]] call Gemini_fnc_territoryGlobalChat;
+    // Premier message du joueur (plus visible)
+    private _playerMsg = format ["<t size='1.3' color='#00FFFF'>Communication Radio</t><br/><t align='left'>[Vous] : PC, ici patrouille. Demande SITREP sur zone: %1. Terminé.</t>", _territoryName];
+    [_playerMsg, 0.5, 0.3, 5, 1] call BIS_fnc_dynamicText;
+    
+    // Également en systemChat pour référence
+    systemChat format ["[Vous] PC, ici patrouille. Demande SITREP sur zone: %1. Terminé.", _territoryName];
     
     // Séquence de dialogue
     [_player, _territoryIndex, _territoryName, _actualState] spawn {
         params ["_player", "_territoryIndex", "_territoryName", "_actualState"];
         
-        private _initialDelay = OPEX_territory_radio_initialDelay;
-        
         // Première réponse du QG après délai
-        sleep _initialDelay;
-        [_player, "QG", "[Vous]", format ["Patrouille, ici PC. Bien reçu, nous analysons la zone: %1. Attente sur votre position. Terminé.", _territoryName]] call Gemini_fnc_territoryGlobalChat;
+        sleep 3;
+        private _pcMsg = format ["<t size='1.3' color='#00FFFF'>Communication Radio</t><br/><t align='left'>[PC] : Patrouille, ici PC. Bien reçu, nous analysons la zone: %1. Attente sur votre position. Terminé.</t>", _territoryName];
+        [_pcMsg, 0.5, 0.3, 5, 1] call BIS_fnc_dynamicText;
+        
+        // Également en systemChat
+        systemChat format ["[PC] Patrouille, ici PC. Bien reçu, nous analysons la zone: %1. Attente sur votre position. Terminé.", _territoryName];
         
         // Simuler analyse (délai aléatoire)
-        private _analyzeDelayRange = OPEX_territory_radio_analyzeTime;
-        private _analyzeTime = (_analyzeDelayRange select 0) + (random ((_analyzeDelayRange select 1) - (_analyzeDelayRange select 0)));
-        
-        sleep _analyzeTime;
+        sleep (5 + (random 5));
         
         // Obtenir la réponse du QG selon l'état du territoire
         private _responseData = [_territoryIndex] call Gemini_fnc_getHQResponse;
-        
-        // Vérifier que les données sont valides
-        if (isNil "_responseData" || {!(_responseData isEqualType [])}) then {
-            _responseData = ["Données indisponibles sur secteur " + _territoryName + ". Restez sur votre position, nous envoyons du renfort pour évaluation.", "unknown"];
-            diag_log "[TERRITOIRE][RADIO] Avertissement: getHQResponse a renvoyé des données invalides";
-        };
-        
         _responseData params ["_responseText", "_responseState"];
         
-        // Envoyer la réponse
-        [_player, "QG", "[Vous]", _responseText] call Gemini_fnc_territoryGlobalChat;
+        // Formater la réponse PC
+        private _responseMsg = format ["<t size='1.3' color='#00FFFF'>Communication Radio</t><br/><t align='left'>[PC] : %1</t>", _responseText];
+        [_responseMsg, 0.5, 0.3, 8, 1] call BIS_fnc_dynamicText;
         
-        // Mettre à jour l'état du territoire si ce n'est pas "unknown"
+        // Également en systemChat
+        systemChat format ["[PC] %1", _responseText];
+        
+        // S'il s'agit d'un territoire réel (pas inconnu), révéler son état
         if (_actualState != "unknown") then {
-            // Réinitialiser la notification si le joueur revient plus tard
-            _player setVariable ["territoryWarningReceived", false, true];
-            
-            // Marquer le territoire comme autorisé
-            _player setVariable ["territoryAuthorized", true, true];
-            
-            // Suppression de l'action radio pour ce territoire
-            [_player, _territoryIndex] call Gemini_fnc_removeRadioAction;
-            
-            // Révéler l'état réel du territoire (exécuté sur le serveur)
+            // Mettre à jour l'état réel du territoire
             [_territoryIndex, _actualState, -1] remoteExec ["Gemini_fnc_updateTerritoryState", 2];
             
-            // Ajouter à la liste des territoires autorisés (exécuté sur le serveur)
+            // Ajouter à la liste des territoires autorisés
             [_territoryIndex] remoteExec ["Gemini_fnc_addToAuthorizedTerritories", 2];
             
-            // Ajouter un message explicite sur l'état du territoire
-            private _stateMessage = switch (_actualState) do {
-                case "enemy": {"Zone HOSTILE - Soyez extrêmement vigilant."};
-                case "neutral": {"Zone NEUTRE - Soyez courtois mais restez sur vos gardes."};
-                case "friendly": {"Zone AMIE - Sous contrôle des forces alliées."};
-                default {"Zone INDÉTERMINÉE - Procédez avec prudence."};
+            // Message supplémentaire plus clair
+            sleep 3;
+            private _stateMsg = switch (_actualState) do {
+                case "enemy": {"ZONE HOSTILE - Soyez extrêmement vigilant."};
+                case "neutral": {"ZONE NEUTRE - Soyez courtois mais restez sur vos gardes."};
+                case "friendly": {"ZONE AMIE - Sous contrôle des forces alliées."};
+                default {"ZONE INDÉTERMINÉE - Procédez avec prudence."};
             };
             
-            // Message supplémentaire pour clarifier l'état du territoire
-            sleep 2;
-            [_player, "QG", "[Vous]", format ["Confirmez: %1 est désormais classifié comme territoire %2. %3", _territoryName, _actualState, _stateMessage]] call Gemini_fnc_territoryGlobalChat;
-            
-            // Notification visuelle
             private _stateColor = switch (_actualState) do {
                 case "enemy": {"#FF0000"};
                 case "neutral": {"#00FF00"};
@@ -132,43 +127,34 @@ Gemini_fnc_startRadioDialog = {
                 default {"#FFFFFF"};
             };
             
-            private _stateNotification = format ["<t size='1.2' color='%1'>TERRITOIRE %2</t><br/>%3", _stateColor, toUpper _actualState, _stateMessage];
-            [_stateNotification, 0.5, 0.3, 5, 0] remoteExec ["BIS_fnc_dynamicText", _player];
+            private _finalMsg = format [
+                "<t size='1.5' color='%1' align='center'>TERRITOIRE %2</t><br/><t size='1.2' align='center'>%3</t>",
+                _stateColor,
+                toUpper _actualState,
+                _stateMsg
+            ];
             
-            // Proposer une mission si nécessaire
-            if (_actualState == "enemy" || _actualState == "neutral" || _actualState == "friendly") then {
-                // Petit délai avant proposition
-                sleep 3;
-                
-                // Message de proposition de mission
-                [_player, "QG", "[Vous]", format ["Patrouille, ici PC. Nous avons une mission pour vous dans ce secteur. Souhaitez-vous l'accepter? Terminé."]] call Gemini_fnc_territoryGlobalChat;
-                
-                // Type de mission selon l'état
-                private _missionType = switch (_actualState) do {
-                    case "enemy": {"clear"};
-                    case "neutral": {"stabilize"};
-                    case "friendly": {"secure"};
-                    default {"none"};
-                };
-                
-                // Ajouter l'action d'acceptation de mission
-                [_player, _territoryIndex, _missionType] call Gemini_fnc_addMissionAcceptAction;
-            };
+            [_finalMsg, 0.5, 0.3, 10, 1] call BIS_fnc_dynamicText;
+            
+            // Supprimer l'action radio pour ce territoire
+            [_player, _territoryIndex] remoteExec ["Gemini_fnc_removeRadioAction", _player];
         } else {
-            // Si le territoire reste inconnu, indiquer clairement au joueur
-            sleep 2;
-            [_player, "QG", "[Vous]", format ["Zone %1 inconnue. Restez en dehors jusqu'à nouvel ordre ou procédez avec extrême prudence.", _territoryName]] call Gemini_fnc_territoryGlobalChat;
+            // Si territoire inconnu, message clair
+            sleep 3;
+            private _unknownMsg = format [
+                "<t size='1.5' color='#FFFFFF' align='center'>ZONE NON RENSEIGNÉE</t><br/><t size='1.2' align='center'>Restez en dehors de %1 jusqu'à nouvel ordre ou procédez avec extrême prudence.</t>",
+                _territoryName
+            ];
+            [_unknownMsg, 0.5, 0.3, 10, 1] call BIS_fnc_dynamicText;
+            
+            // Si territoire inconnu, retirer autorisation
+            _player setVariable ["territoryAuthorized", false, true];
         };
         
-        // Fin de la communication radio (exécuté sur le serveur)
-        sleep 1;
+        // Fin de la communication radio
+        sleep 2;
         missionNamespace setVariable ["OPEX_radioComm_active", false, true];
         publicVariable "OPEX_radioComm_active";
-        
-        // Effet audio de fin (si disponible)
-        if (!isNil "Gemini_fnc_playSoundEffect") then {
-            [_player, "radio_end"] call Gemini_fnc_playSoundEffect;
-        };
     };
     
     true

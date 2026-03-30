@@ -82,10 +82,12 @@
 // =========================================================================================================
 
 // TERRITORY SYSTEM
+// Dans init.sqf, à la fin:
 diag_log "[TERRITOIRE] Configuration du moniteur territorial depuis init.sqf principal";
 [] spawn {
     waitUntil {!isNil "OPEX_territory_functions_compiled" && {OPEX_territory_functions_compiled}};
     waitUntil {!isNil "OPEX_territories_initialized" && {OPEX_territories_initialized}};
+    
     diag_log "[TERRITOIRE] Vérification si moniteur déjà actif...";
     if (isNil "OPEX_territory_monitoring_active") then {
         diag_log "[TERRITOIRE] Démarrage du moniteur territorial depuis init.sqf";

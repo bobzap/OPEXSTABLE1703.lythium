@@ -7,6 +7,7 @@
 */
 
 // Fonction pour initialiser l'action radio pour un joueur et un territoire
+// Dans fnc_radioActions.sqf, correction de Gemini_fnc_initRadioAction:
 Gemini_fnc_initRadioAction = {
     params [
         ["_player", objNull, [objNull]],
@@ -30,23 +31,30 @@ Gemini_fnc_initRadioAction = {
     
     diag_log format ["[TERRITOIRE][RADIO] Initialisation action radio pour %1 dans territoire %2", name _player, _territoryName];
     
-    // Vérifier si le joueur est sur la bonne machine
+    // S'assurer qu'on est sur le bon client
     if (!hasInterface) exitWith {
         diag_log "[TERRITOIRE][RADIO] Erreur: Tentative d'ajouter action radio sans interface";
         false
     };
     
-    // Créer la fonction appropriée selon que ACE est activé ou non
-    if (OPEX_ace_enabled) then {
-        // Version ACE
-        [_player, _territoryIndex] call Gemini_fnc_addACERadioAction;
-    } else {
-        // Version standard
-        [_player, _territoryIndex] call Gemini_fnc_addStandardRadioAction;
+    // Délai avant d'ajouter l'action pour éviter les conflits
+    [_player, _territoryIndex, _territoryName] spawn {
+        params ["_player", "_territoryIndex", "_territoryName"];
+        sleep 1;
+        
+        // Créer la fonction appropriée selon que ACE est activé ou non
+        if (isClass (configFile >> "CfgPatches" >> "ace_main")) then {
+            // Version ACE
+            [_player, _territoryIndex] call Gemini_fnc_addACERadioAction;
+        } else {
+            // Version standard
+            [_player, _territoryIndex] call Gemini_fnc_addStandardRadioAction;
+        };
+        
+        // Envoyer une notification au joueur après un délai
+        sleep 2;
+        [_player, _territoryName] call Gemini_fnc_radioAvailableNotification;
     };
-    
-    // Envoyer une notification au joueur
-    [_player, _territoryName] call Gemini_fnc_radioAvailableNotification;
     
     true
 };

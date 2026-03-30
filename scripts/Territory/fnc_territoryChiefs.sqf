@@ -5,14 +5,21 @@
 
 // FONCTION: Spawn d'un chef de village
 Gemini_fnc_spawnVillageChief = {
-    if (missionNamespace getVariable ["OPEX_chief_spawning", false]) exitWith {objNull};
-missionNamespace setVariable ["OPEX_chief_spawning", true];
-
+     params ["_territoryIndex"];
+    
+    // Utiliser une variable globale pour éviter les appels simultanés
+    if (missionNamespace getVariable ["OPEX_chief_spawning", false]) exitWith {
+        diag_log "[TERRITOIRE] Création de chef déjà en cours - demande ignorée";
+        objNull
+    };
+    
+    missionNamespace setVariable ["OPEX_chief_spawning", true, true];
+    
     if (!isServer) exitWith {
-    diag_log "[TERRITOIRE] Tentative de spawn d'un chef depuis un client - ignoré";
-    objNull
-};
-    params ["_territoryIndex"];
+        diag_log "[TERRITOIRE] Tentative de spawn de chef depuis un client - ignoré";
+        missionNamespace setVariable ["OPEX_chief_spawning", false, true];
+        objNull
+    };
     
     diag_log format ["[TERRITOIRE] Début fonction spawn chef pour index: %1", _territoryIndex];
     
@@ -134,8 +141,7 @@ missionNamespace setVariable ["OPEX_chief_spawning", true];
     
     diag_log format ["[TERRITOIRE] Chef créé avec succès: %1 à position %2", _chief, getPos _chief];
     
-missionNamespace setVariable ["OPEX_chief_spawning", false];
-    
+    missionNamespace setVariable ["OPEX_chief_spawning", false, true];
     _chief
 };
 
