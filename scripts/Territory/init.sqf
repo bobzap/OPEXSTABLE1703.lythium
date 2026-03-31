@@ -100,7 +100,6 @@ diag_log "[TERRITOIRE] Compilation des fonctions de chefs de village";
 
 Gemini_fnc_spawnVillageChief = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 Gemini_fnc_addChiefInteraction = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
-Gemini_fnc_openChiefDialog = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 Gemini_fnc_handleChiefDeath = compile preprocessFileLineNumbers "scripts\Territory\fnc_territoryChiefs.sqf";
 
 // --- SECTION 6: FONCTIONS DE DÉTECTION ET MONITORING ---
@@ -128,13 +127,21 @@ Gemini_fnc_getTerritoryColor = compile preprocessFileLineNumbers "scripts\Territ
 Gemini_fnc_getRecentIncidents = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
 Gemini_fnc_getReputationEffect = compile preprocessFileLineNumbers "scripts\Territory\fnc_chiefInteractions.sqf";
 
-// --- SECTION 8: INITIALISATION DES MISSIONS ---
+// --- SECTION 8: SYSTÈME D'ÉTAT ---
+diag_log "[TERRITOIRE] Compilation des fonctions du système d'état";
+
+Gemini_fnc_computeRandomState = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_computeRandomState.sqf";
+Gemini_fnc_requestStateTransition = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_stateTransition.sqf";
+Gemini_fnc_checkSecurityThresholds = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_stateTransition.sqf";
+Gemini_fnc_updateTerritoryVisuals = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_updateTerritoryVisuals.sqf";
+
+// --- SECTION 9: INITIALISATION DES MISSIONS ---
 diag_log "[TERRITOIRE] Chargement des missions territoriales";
 
 // Charger séparément les missions
 execVM "scripts\Territory\Missions\initMissions.sqf";
 
-// --- SECTION 9: VÉRIFICATION DE LA COMPILATION DES FONCTIONS ---
+// --- SECTION 10: VÉRIFICATION DE LA COMPILATION DES FONCTIONS ---
 // Vérifier que toutes les fonctions critiques sont correctement compilées
 _functionsToCheck = [
     "Gemini_fnc_initTerritorySystem",
@@ -142,7 +149,10 @@ _functionsToCheck = [
     "Gemini_fnc_territoryExitNotification",
     "Gemini_fnc_initTerritoryMonitor",
     "Gemini_fnc_handleTerritoryEnter",
-    "Gemini_fnc_handleTerritoryExit"
+    "Gemini_fnc_handleTerritoryExit",
+    "Gemini_fnc_computeRandomState",
+    "Gemini_fnc_requestStateTransition",
+    "Gemini_fnc_updateTerritoryVisuals"
 ];
 
 _missingFunctions = [];
@@ -158,7 +168,7 @@ if (count _missingFunctions > 0) then {
     diag_log "[TERRITOIRE] Toutes les fonctions critiques sont correctement compilées";
 };
 
-// --- SECTION 10: DÉMARRAGE DU SYSTÈME (SERVER ONLY) ---
+// --- SECTION 11: DÉMARRAGE DU SYSTÈME (SERVER ONLY) ---
 if (isServer) then {
     [] spawn {
         diag_log "[TERRITOIRE] Préparation à l'initialisation du système (côté serveur)...";

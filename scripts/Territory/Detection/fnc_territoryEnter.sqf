@@ -45,69 +45,83 @@ Gemini_fnc_handleTerritoryEnter = {
     // Actions spécifiques selon l'état du territoire
     diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Traitement des actions spécifiques pour état: %1", _territoryState];
     switch (_territoryState) do {
-        // Dans fnc_territoryEnter.sqf, modification:
-case "unknown": {
-    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'unknown'";
-    // Envoyer d'abord la notification d'entrée
-    [_player, _territoryName, _territoryState] call Gemini_fnc_territoryEntryNotification;
-    
-    // Attendre un délai avant d'ajouter l'action radio via spawn
-    [_player, _territoryIndex] spawn {
-        params ["_player", "_territoryIndex"];
-        sleep 3; // Attendre 3 secondes
-        
-        // Ajouter l'action radio
-        [_player, _territoryIndex] remoteExec ["Gemini_fnc_initRadioAction", _player];
-    };
-    
-    // Démarrer le suivi de pénalité 
-    [_player, _territoryIndex, _territoryName] spawn Gemini_fnc_startPenaltyTracking;
-};
-        
-        case "neutral": {
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'neutral'";
-            // Gestion du chef de village
-            [_territoryIndex] spawn {
-                params ["_index"];
-                diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Début spawn chef village pour index %1", _index];
-                sleep 1; // Petit délai pour stabilité
-                
-                private _territoryData = OPEX_territories select _index;
-                private _name = _territoryData select 0;
-                private _chief = _territoryData select 5;
-                
-                diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Chef existant pour %1: %2", _name, _chief];
-                
-                // Si pas de chef, en créer un
-                if (isNull _chief) then {
-                    diag_log format ["[TERRITOIRE][ENTRÉE] Création dynamique d'un chef pour %1", _name];
-                    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Avant appel à spawnVillageChief";
-                    [_index] spawn Gemini_fnc_spawnVillageChief;
-                    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Après appel à spawnVillageChief";
+        case "unknown": {
+            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'unknown'";
+
+            // Attendre un délai avant d'ajouter l'action radio via spawn
+            [_player, _territoryIndex] spawn {
+                params ["_player", "_territoryIndex"];
+                sleep 3;
+
+                // Ajouter l'action radio côté client
+                [_player, _territoryIndex] remoteExec ["Gemini_fnc_initRadioAction", _player];
+            };
+
+            // Démarrer le suivi de pénalité
+            [_player, _territoryIndex, _territoryName] spawn Gemini_fnc_startPenaltyTracking;
+        };
+
+        case "enemy": {
+            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'enemy'";
+            // Marquer le joueur comme autorisé (territoire déjà identifié comme hostile)
+            _player setVariable ["territoryAuthorized", true, true];
+
+            // Proposer une mission via radio après un délai
+            [_player, _territoryIndex] spawn {
+                params ["_player", "_territoryIndex"];
+                sleep 5;
+
+                // Proposer une mission si le joueur est toujours dans le territoire
+                if ((_player getVariable ["lastVisitedTerritory", ""]) == ((OPEX_territories select _territoryIndex) select 0)) then {
+                    [_player, _territoryIndex] remoteExec ["Gemini_fnc_offerMissionViaRadio", _player];
                 };
             };
         };
-        
-        case "friendly": {
-            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'friendly'";
-            // Gestion du chef de village
-            [_territoryIndex] spawn {
-                params ["_index"];
-                diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Début spawn chef village pour index %1", _index];
-                sleep 1; // Petit délai pour stabilité
-                
+
+        case "neutral": {
+            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'neutral'";
+            [_player, _territoryIndex] spawn {
+                params ["_player", "_index"];
+                sleep 1;
+
                 private _territoryData = OPEX_territories select _index;
                 private _name = _territoryData select 0;
                 private _chief = _territoryData select 5;
-                
-                diag_log format ["[TERRITOIRE][DEBUG-ENTRÉE] Chef existant pour %1: %2", _name, _chief];
-                
-                // Si pas de chef, en créer un
+
+                // Si pas de chef, en créer un (la description sera envoyée par spawnVillageChief)
                 if (isNull _chief) then {
-                    diag_log format ["[TERRITOIRE][ENTRÉE] Création dynamique d'un chef pour %1", _name];
-                    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Avant appel à spawnVillageChief";
-                    [_index] spawn Gemini_fnc_spawnVillageChief;
-                    diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Après appel à spawnVillageChief";
+                    [_index] call Gemini_fnc_spawnVillageChief;
+                } else {
+                    // Chef existant → envoyer la description au joueur
+                    if (alive _chief) then {
+                        private _dirText = _chief getVariable ["chiefDirection", "dans les environs"];
+                        private _locText = _chief getVariable ["chiefLocation", "quelque part dans le village"];
+                        private _descMsg = format ["[QG] Le responsable local de %1 se trouverait %2, %3.", _name, _dirText, _locText];
+                        [_descMsg] remoteExec ["systemChat", _player];
+                    };
+                };
+            };
+        };
+
+        case "friendly": {
+            diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'friendly'";
+            [_player, _territoryIndex] spawn {
+                params ["_player", "_index"];
+                sleep 1;
+
+                private _territoryData = OPEX_territories select _index;
+                private _name = _territoryData select 0;
+                private _chief = _territoryData select 5;
+
+                if (isNull _chief) then {
+                    [_index] call Gemini_fnc_spawnVillageChief;
+                } else {
+                    if (alive _chief) then {
+                        private _dirText = _chief getVariable ["chiefDirection", "dans les environs"];
+                        private _locText = _chief getVariable ["chiefLocation", "quelque part dans le village"];
+                        private _descMsg = format ["[QG] Le responsable local de %1 se trouverait %2, %3.", _name, _dirText, _locText];
+                        [_descMsg] remoteExec ["systemChat", _player];
+                    };
                 };
             };
         };

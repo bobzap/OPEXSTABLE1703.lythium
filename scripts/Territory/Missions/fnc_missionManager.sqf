@@ -20,8 +20,10 @@ Gemini_fnc_territoryMissionManager = {
     // Sélectionner le type de mission selon l'état du territoire
     switch (_state) do {
         case "unknown": {
-            // Les missions pour territoires inconnus sont gérées différemment via la radio
-            [_territoryIndex] call Gemini_fnc_initiateRadioCommunication;
+            // Les territoires inconnus doivent d'abord être identifiés via la radio
+            // L'action radio est gérée côté client par fnc_territoryEnter.sqf -> Gemini_fnc_initRadioAction
+            diag_log format ["[TERRITOIRE][MISSIONS] Territoire %1 inconnu - le joueur doit d'abord utiliser la radio", _name];
+            ["globalChat", format ["Secteur %1 non identifié. Utilisez votre radio pour contacter le PC.", _name]] remoteExec ["Gemini_fnc_globalChat", 0];
         };
         case "enemy": {
             [_territoryIndex] call Gemini_fnc_offerEnemyMission;

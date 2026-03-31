@@ -131,15 +131,35 @@ Gemini_fnc_spawnVillageChief = {
     OPEX_territories set [_territoryIndex, _updatedTerritoryData];
     publicVariable "OPEX_territories";
     
-    // Créer un marqueur pour le chef
-    private _chiefMarker = createMarker [format ["territory_chief_%1", _name], getPos _chief];
-    _chiefMarker setMarkerType "mil_triangle";
-    _chiefMarker setMarkerColor "ColorYellow";
-    _chiefMarker setMarkerText format ["%1 - Chef", _name];
-    _chiefMarker setMarkerSize [0.6, 0.6];
-    _chiefMarker setMarkerAlpha 0; // Invisible au départ
-    
-    diag_log format ["[TERRITOIRE] Chef créé avec succès: %1 à position %2", _chief, getPos _chief];
+    // Stocker les infos descriptives du chef pour les notifications RP
+    _chief setVariable ["chiefIndoors", _foundBuildingPos, true];
+
+    // Calculer la direction approximative depuis le centre du territoire
+    private _dir = _position getDir (getPos _chief);
+    private _dirText = switch (true) do {
+        case (_dir < 45 || _dir >= 315): { "au nord" };
+        case (_dir >= 45 && _dir < 135): { "à l'est" };
+        case (_dir >= 135 && _dir < 225): { "au sud" };
+        default { "à l'ouest" };
+    };
+    _chief setVariable ["chiefDirection", _dirText, true];
+    _chief setVariable ["chiefLocation", if (_foundBuildingPos) then { "dans un bâtiment" } else { "en extérieur" }, true];
+
+    // Notifier les joueurs proches de la présence du chef
+    private _descMsg = format [
+        "[QG] Un responsable local a été signalé %1 du village de %2, %3. Civil coopératif, vêtements traditionnels.",
+        _dirText, _name,
+        if (_foundBuildingPos) then { "probablement à l'intérieur d'un bâtiment" } else { "en extérieur près des habitations" }
+    ];
+
+    // Envoyer à tous les joueurs dans le rayon du territoire
+    {
+        if ((getPosATL _x) distance2D _position < (_territoryData select 2)) then {
+            [_descMsg] remoteExec ["systemChat", _x];
+        };
+    } forEach allPlayers;
+
+    diag_log format ["[TERRITOIRE] Chef créé avec succès pour %1: %2, %3", _name, _dirText, if (_foundBuildingPos) then {"intérieur"} else {"extérieur"}];
     
     missionNamespace setVariable ["OPEX_chief_spawning", false, true];
     _chief
@@ -177,23 +197,7 @@ Gemini_fnc_addChiefInteraction = {
     diag_log format ["[TERRITOIRE] Interaction ajoutée au chef: %1", _chief];
 };
 
-// FONCTION: Afficher la boîte de dialogue des missions du chef
-Gemini_fnc_openChiefMissionDialog = {
-    params [["_chief", objNull, [objNull]], ["_player", objNull, [objNull]]];
-    
-    // Vérification de sécurité
-    if (isNull _chief) exitWith {
-        hint "Erreur: Chef non défini";
-    };
-    
-    private _territoryIndex = _chief getVariable ["territoryIndex", -1];
-    if (_territoryIndex == -1) exitWith {
-        hint "Erreur: Chef non lié à un territoire";
-    };
-    
-    // Appel de la fonction existante
-    [_chief, _player, _territoryIndex] call Gemini_fnc_openChiefDialog;
-};
+// NOTE: Gemini_fnc_openChiefMissionDialog est défini dans fnc_chiefInteractions.sqf
 
 // FONCTION: Gestion de la mort d'un chef de village
 Gemini_fnc_handleChiefDeath = {

@@ -22,10 +22,15 @@ Gemini_fnc_initTerritorySystem = {
         
         // Ne pas utiliser les zones sûres
         if (!([_locationPos, OPEX_locations_safe] call BIS_fnc_isPosBlacklisted)) then {
-            // Déterminer état initial: par défaut "unknown" sauf si très proche du camp
+            // Déterminer l'état initial via le StateSystem
             private _state = "unknown";
-            if (_locationPos distance (getMarkerPos "OPEX_marker_camp") < 2500) then {
-                _state = "neutral"; // Seules les zones très proches sont connues dès le départ
+            if (!isNil "Gemini_fnc_computeRandomState") then {
+                _state = [_locationPos, _radius] call Gemini_fnc_computeRandomState;
+            } else {
+                // Fallback si le StateSystem n'est pas encore compilé
+                if (_locationPos distance (getMarkerPos "OPEX_marker_camp") < 2500) then {
+                    _state = "neutral";
+                };
             };
             
             // Créer un territoire
@@ -282,10 +287,10 @@ Gemini_fnc_updateTerritoryState = {
             if (isNull (_territoryData select 5)) then {
                 diag_log format ["[TERRITOIRE] Création forcée d'un chef pour %1", _name];
                 [_territoryIndex] spawn {
-    params ["_idx"];
-    sleep 0.1;
-    [_idx] spawn Gemini_fnc_spawnVillageChief;
-};
+                    params ["_idx"];
+                    sleep 1;
+                    [_idx] call Gemini_fnc_spawnVillageChief;
+                };
             };
         };
         
@@ -300,9 +305,18 @@ Gemini_fnc_updateTerritoryState = {
         ["globalChat", _message] remoteExec ["Gemini_fnc_globalChat", 0];
     };
     
+    // Mettre à jour les marqueurs visuels
+    if (!isNil "Gemini_fnc_updateTerritoryVisuals") then {
+        [_territoryIndex] call Gemini_fnc_updateTerritoryVisuals;
+    };
+
+    // NOTE: Les seuils de sécurité sont déjà vérifiés en inline (lignes 224-236).
+    // Gemini_fnc_checkSecurityThresholds est disponible pour les appels externes
+    // (missions, attaques dynamiques) mais N'EST PAS appelé ici pour éviter la récursion.
+
     // Mettre à jour la réputation globale basée sur les territoires
     [] call Gemini_fnc_updateReputationFromTerritories;
-    
+
     true
 };
 

@@ -1,21 +1,34 @@
-// FONCTION: Afficher la boîte de dialogue des missions du chef
-
-// FONCTION: Afficher la boîte de dialogue des missions du chef
+// FONCTION: Afficher la boîte de dialogue du chef de village
 Gemini_fnc_openChiefMissionDialog = {
-    params [["_chief", objNull, [objNull]], ["_player", objNull, [objNull]]];
-    
+    params [
+        ["_chief", objNull, [objNull]],
+        ["_player", objNull, [objNull]],
+        ["_territoryIndex", -1, [0]]
+    ];
+
     // Vérification de sécurité
-    if (isNull _chief) exitWith {
-        hint "Erreur: Chef non défini";
+    if (isNull _chief || isNull _player) exitWith {
+        diag_log "[TERRITOIRE][CHEF] Erreur: Chef ou joueur non défini";
     };
-    
-    private _territoryIndex = _chief getVariable ["territoryIndex", -1];
-    if (_territoryIndex == -1) exitWith {
-        hint "Erreur: Chef non lié à un territoire";
+
+    // Récupérer l'index depuis la variable du chef si non fourni
+    if (_territoryIndex < 0) then {
+        _territoryIndex = _chief getVariable ["territoryIndex", -1];
     };
-    
-    // Appel de la fonction existante
-    [_chief, _player, _territoryIndex] call Gemini_fnc_openChiefDialog;
+
+    if (_territoryIndex < 0 || _territoryIndex >= count OPEX_territories) exitWith {
+        diag_log "[TERRITOIRE][CHEF] Erreur: Chef non lié à un territoire valide";
+    };
+
+    // Afficher le statut du territoire
+    [_chief, _player] call Gemini_fnc_showTerritoryStatus;
+
+    // Afficher la réputation après un délai
+    [_chief, _player] spawn {
+        params ["_chief", "_player"];
+        sleep 8;
+        [_chief, _player] call Gemini_fnc_showFactionReputation;
+    };
 };
 
 // FONCTION: Afficher le status du territoire
