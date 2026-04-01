@@ -303,23 +303,21 @@ Gemini_fnc_addMissionAcceptAction = {
         // Version ACE
         private _actionID = [
             format ["AcceptMission_%1_%2", _territoryIndex, _missionType],
-            "Accepter mission du PC",
+            format ["Accepter mission — %1", _territoryName],
             "\a3\ui_f\data\IGUI\Cfg\simpleTasks\types\attack_ca.paa",
             {
                 params ["_target", "_player", "_params"];
                 _params params ["_territoryIndex", "_missionType"];
-                
-                // Notification d'acceptation
-                systemChat "[Vous] PC, ici patrouille. Mission acceptée. Terminé.";
-                
-                sleep 2;
-                systemChat "[PC] Bien reçu. Mission en cours de préparation. Bonne chance. Terminé.";
-                
+
+                // Notification via le systeme de notif
+                [_player, "MISSION", "Mission acceptee. Preparation en cours.", "radio", 4] call Gemini_fnc_territoryNotification;
+
                 // Lancer la mission (côté serveur)
                 [_territoryIndex, _missionType] remoteExec ["Gemini_fnc_territoryMissionManager", 2];
-                
-                // Supprimer l'action après acceptation
+
+                // Supprimer l'action + reset flag
                 [_player, 1, ["ACE_SelfActions", format ["AcceptMission_%1_%2", _territoryIndex, _missionType]]] call ace_interact_menu_fnc_removeActionFromObject;
+                _player setVariable ["OPEX_territory_missionOffered", false, true];
             },
             {
                 params ["_target", "_player", "_params"];
@@ -348,22 +346,17 @@ Gemini_fnc_addMissionAcceptAction = {
     } else {
         // Version standard
         private _actionID = _player addAction [
-            format ["<img image='\a3\ui_f\data\IGUI\Cfg\simpleTasks\types\attack_ca.paa'/> Accepter mission dans %1", _territoryName],
+            format ["<img image='\a3\ui_f\data\IGUI\Cfg\simpleTasks\types\attack_ca.paa'/> Accepter mission — %1", _territoryName],
             {
                 params ["_target", "_caller", "_actionId", "_args"];
                 _args params ["_territoryIndex", "_missionType"];
-                
-                // Notification d'acceptation
-                systemChat "[Vous] PC, ici patrouille. Mission acceptée. Terminé.";
-                
-                sleep 2;
-                systemChat "[PC] Bien reçu. Mission en cours de préparation. Bonne chance. Terminé.";
-                
-                // Lancer la mission (côté serveur)
+
+                [_caller, "MISSION", "Mission acceptee. Preparation en cours.", "radio", 4] call Gemini_fnc_territoryNotification;
+
                 [_territoryIndex, _missionType] remoteExec ["Gemini_fnc_territoryMissionManager", 2];
-                
-                // Supprimer l'action
+
                 _caller removeAction _actionId;
+                _caller setVariable ["OPEX_territory_missionOffered", false, true];
             },
             [_territoryIndex, _missionType],
             6,

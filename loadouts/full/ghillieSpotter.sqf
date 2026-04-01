@@ -130,12 +130,12 @@
 		};
 
 	// OTHERS
-	if (count OPEX_friendly_sniperPDAs > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_sniperPDAs)};
-	if (count OPEX_friendly_weatherPDAs > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_weatherPDAs)};
-	if (count OPEX_friendly_mapTools > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_mapTools)};
-	if (count OPEX_friendly_rangeCards > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_rangeCards)};
-	if (count OPEX_friendly_advancedGPS > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_advancedGPS)};
-	if (count OPEX_friendly_tripods > 0) then {for "_i" from 1 to 1 do {_unit addItemToBackpack (selectRandom OPEX_friendly_tripods)};
+	if (count OPEX_friendly_sniperPDAs > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_sniperPDAs)}};
+	if (count OPEX_friendly_weatherPDAs > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_weatherPDAs)}};
+	if (count OPEX_friendly_mapTools > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_mapTools)}};
+	if (count OPEX_friendly_rangeCards > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_rangeCards)}};
+	if (count OPEX_friendly_advancedGPS > 0) then {for "_i" from 1 to 1 do {_unit addItemToUniform (selectRandom OPEX_friendly_advancedGPS)}};
+	if (count OPEX_friendly_tripods > 0) then {for "_i" from 1 to 1 do {_unit addItemToBackpack (selectRandom OPEX_friendly_tripods)}};
 
 
 // ----------------------------------------------------------------------

@@ -75,6 +75,7 @@ Gemini_fnc_handleTerritoryExit = {
     _player setVariable ["territoryAuthorized", false, true];
     _player setVariable ["territoryPenalized", false, true];
     _player setVariable ["territoryState", "", true];
+    _player setVariable ["OPEX_territory_missionOffered", false, true];
     
     diag_log "[TERRITOIRE][DEBUG-SORTIE] Fin handleTerritoryExit";
     true

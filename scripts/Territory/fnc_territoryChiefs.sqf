@@ -145,17 +145,16 @@ Gemini_fnc_spawnVillageChief = {
     _chief setVariable ["chiefDirection", _dirText, true];
     _chief setVariable ["chiefLocation", if (_foundBuildingPos) then { "dans un bâtiment" } else { "en extérieur" }, true];
 
-    // Notifier les joueurs proches de la présence du chef
+    // Notifier les joueurs proches de la présence du chef (via le système de notifications)
     private _descMsg = format [
-        "[QG] Un responsable local a été signalé %1 du village de %2, %3. Civil coopératif, vêtements traditionnels.",
+        "Un responsable local serait %1 de %2, %3.",
         _dirText, _name,
-        if (_foundBuildingPos) then { "probablement à l'intérieur d'un bâtiment" } else { "en extérieur près des habitations" }
+        if (_foundBuildingPos) then { "dans un batiment" } else { "en exterieur pres des habitations" }
     ];
 
-    // Envoyer à tous les joueurs dans le rayon du territoire
     {
         if ((getPosATL _x) distance2D _position < (_territoryData select 2)) then {
-            [_descMsg] remoteExec ["systemChat", _x];
+            [_x, _descMsg] call Gemini_fnc_territorySystemChat;
         };
     } forEach allPlayers;
 
@@ -184,14 +183,16 @@ Gemini_fnc_addChiefInteraction = {
         "<t color='#FFFF00'>Parler au chef de village</t>",
         {
             params ["_target", "_caller", "_actionId", "_arguments"];
+            // Arrêter l'animation ambiante avant d'ouvrir le dialogue
+            [_target, "NONE"] call BIS_fnc_ambientAnim;
             [_target, _caller] execVM "scripts\Gemini\fnc_civilianInteractionsDialog.sqf";
         },
         nil,
         6,
         true,
-        true,
+        false,
         "",
-        "alive _target && _target distance _this < 3"
+        "alive _target && _target distance _this < 5"
     ];
     
     diag_log format ["[TERRITOIRE] Interaction ajoutée au chef: %1", _chief];

@@ -23,7 +23,7 @@
 			OPEX_assignedTask_server = OPEX_assignedTask; publicVariable "OPEX_assignedTask_server";
 			OPEX_taskID_server = OPEX_taskID; publicVariable "OPEX_taskID_server";
 			OPEX_taskDescription_server = OPEX_taskDescription; publicVariable "OPEX_taskDescription_server";
-			OPEX_ambientCivilianBoats_server= OPEX_ambientCivilianBoats; publicVariable "OPEX_ambientCivilianBoats_server";
+			if (!isNil "OPEX_ambientCivilianBoats") then {OPEX_ambientCivilianBoats_server= OPEX_ambientCivilianBoats; publicVariable "OPEX_ambientCivilianBoats_server"};
 			OPEX_ambientCivilianCars_server = OPEX_ambientCivilianCars; publicVariable "OPEX_ambientCivilianCars_server";
 			OPEX_ambientEnemyAmbushes_server = OPEX_ambientEnemyAmbushes; publicVariable "OPEX_ambientEnemyAmbushes_server";
 			OPEX_ambientEnemyBivouacs_server = OPEX_ambientEnemyBivouacs; publicVariable "OPEX_ambientEnemyBivouacs_server";
@@ -136,7 +136,7 @@
 
 	diag_log "";
 	diag_log "[AMBIENT MODULES]";
-	diag_log format ["   - CIVILIAN BOATS :       %1 (%2)", OPEX_ambientCivilianBoats, OPEX_ambientCivilianBoats_server];
+	diag_log format ["   - CIVILIAN BOATS :       %1 (%2)", if (!isNil "OPEX_ambientCivilianBoats") then {OPEX_ambientCivilianBoats} else {"N/A"}, if (!isNil "OPEX_ambientCivilianBoats_server") then {OPEX_ambientCivilianBoats_server} else {"N/A"}];
 	diag_log format ["   - CIVILIAN CARS :        %1 (%2)", OPEX_ambientCivilianCars, OPEX_ambientCivilianCars_server];
 	diag_log format ["   - ENEMY AMBUSHES :       %1 (%2)", OPEX_ambientEnemyAmbushes, OPEX_ambientEnemyAmbushes_server];
 	diag_log format ["   - ENEMY BIVOUACS :       %1 (%2)", OPEX_ambientEnemyBivouacs, OPEX_ambientEnemyBivouacs_server];

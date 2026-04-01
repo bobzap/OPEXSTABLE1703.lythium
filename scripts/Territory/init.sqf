@@ -132,7 +132,7 @@ diag_log "[TERRITOIRE] Compilation des fonctions du système d'état";
 
 Gemini_fnc_computeRandomState = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_computeRandomState.sqf";
 Gemini_fnc_requestStateTransition = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_stateTransition.sqf";
-Gemini_fnc_checkSecurityThresholds = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_stateTransition.sqf";
+Gemini_fnc_checkSecurityThresholds = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_checkSecurityThresholds.sqf";
 Gemini_fnc_updateTerritoryVisuals = compile preprocessFileLineNumbers "scripts\Territory\StateSystem\fnc_updateTerritoryVisuals.sqf";
 
 // --- SECTION 9: INITIALISATION DES MISSIONS ---
@@ -167,6 +167,29 @@ if (count _missingFunctions > 0) then {
 } else {
     diag_log "[TERRITOIRE] Toutes les fonctions critiques sont correctement compilées";
 };
+
+// --- WARM-UP: Premier appel pour initialiser les fonctions multi-fichiers ---
+// Le pattern "compile preprocessFileLineNumbers" nécessite un premier appel pour que
+// les fonctions définies dans les fichiers soient disponibles. Les params invalides
+// déclenchent les exitWith sans effet de bord.
+diag_log "[TERRITOIRE] Warm-up des fonctions compilées...";
+
+// Detection
+[objNull, -1] call Gemini_fnc_handleTerritoryEnter;
+[objNull] call Gemini_fnc_handleTerritoryExit;
+[objNull, -1, ""] call Gemini_fnc_startPenaltyTracking;
+
+// Communications
+[objNull, "", "", "info"] call Gemini_fnc_territoryNotification;
+[objNull] call Gemini_fnc_canUseRadio;
+[objNull, -1] call Gemini_fnc_initRadioAction;
+[objNull, -1] call Gemini_fnc_startRadioDialog;
+[objNull, -1] call Gemini_fnc_offerMissionViaRadio;
+
+// Chief interactions
+[objNull, objNull, -1] call Gemini_fnc_openChiefMissionDialog;
+
+diag_log "[TERRITOIRE] Warm-up terminé";
 
 // --- SECTION 11: DÉMARRAGE DU SYSTÈME (SERVER ONLY) ---
 if (isServer) then {

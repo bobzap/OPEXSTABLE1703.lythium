@@ -1,14 +1,15 @@
 /*
     Fichier: fnc_messagingSystem.sqf
-    Description: Système centralisé de messages et notifications pour le système territorial
-    
-    Ce fichier fournit des fonctions standardisées pour tous les types de notifications
-    utilisées dans le système territorial.
+    Description: Systeme centralise de notifications pour le systeme territorial
+    Style: Tout via BIS_fnc_dynamicText
+
+    Positions (fractions ecran 0-1, compatibles serveur dedie):
+    - Layer 700: Notifications principales (x=0.6, y=0.15) — sous la boussole, a droite
+    - Layer 701: Messages radio (x=0.55, y=0.28) — en dessous
+    - Layer 702: Infos secondaires (x=0.6, y=0.40) — description chef etc.
 */
 
-// Fonction pour envoyer une notification visuelle (dynamicText)
-// Dans fnc_messagingSystem.sqf, amélioration de Gemini_fnc_territoryNotification:
-// Modification de la fonction fnc_messagingSystem.sqf:
+// Notification principale
 Gemini_fnc_territoryNotification = {
     params [
         ["_target", objNull, [objNull, 0, []]],
@@ -17,96 +18,83 @@ Gemini_fnc_territoryNotification = {
         ["_type", "info", [""]],
         ["_duration", -1, [0]]
     ];
-    
+
     private _color = switch (_type) do {
-        case "warning": {"#FFA500"};  // Orange
-        case "error": {"#FF0000"};    // Rouge
-        case "success": {"#00FF00"};  // Vert
-        default {"#FFFFFF"};          // Blanc (info)
+        case "warning": {"#FFA500"};
+        case "error": {"#FF0000"};
+        case "success": {"#55CC55"};
+        case "radio": {"#00CCCC"};
+        default {"#DDDDDD"};
     };
-    
-    // Durées plus longues
+
     if (_duration < 0) then {
         _duration = switch (_type) do {
-            case "warning": {15};
-            case "error": {15};
-            default {10};
+            case "warning": {7};
+            case "error": {7};
+            case "radio": {5};
+            default {5};
         };
     };
-    
-    // Texte plus grand et mieux formaté
+
     private _formattedText = format [
-        "<t size='1.5' color='%1' align='center' shadow='2'>%2</t><br/><t size='1.2' align='center'>%3</t>",
-        _color,
-        _title,
-        _message
+        "<t size='1.0' color='%1' shadow='2' align='right'>%2</t><br/><t size='0.8' color='#BBBBBB' shadow='1' align='right'>%3</t>",
+        _color, _title, _message
     ];
-    
-    // Position en haut de l'écran, plus visible
-    [_formattedText, 0.5, 0.1, _duration, 1, 0, 7] remoteExec ["BIS_fnc_dynamicText", _target];
-    
-    // Log
+
+    // x=0.35 donne un bloc large (35% a 100%) avec texte aligne a droite
+    [_formattedText, 0.35, 0.15, _duration, 0.3, 0, 700] remoteExec ["BIS_fnc_dynamicText", _target];
+
     if (OPEX_territory_debug) then {
-        diag_log format ["[TERRITOIRE][NOTIF] Envoyé à %1: %2 - %3", 
-            if (isNull _target) then {"all"} else {
-                if (typeName _target == "OBJECT") then {name _target} else {"multiple"}
-            }, 
-            _title, 
-            _message
+        diag_log format ["[TERRITOIRE][NOTIF] %1: %2 - %3",
+            if (typeName _target == "OBJECT") then {name _target} else {"all"},
+            _title, _message
         ];
     };
 };
 
-// Fonction pour envoyer un message systemChat
-Gemini_fnc_territorySystemChat = {
-    params [
-        ["_target", objNull, [objNull, 0, []]],  // Cible (joueur, côté ou array)
-        ["_message", "", [""]]                   // Message à envoyer
-    ];
-    
-    // Envoyer le message
-    [_message] remoteExec ["systemChat", _target];
-    
-    // Log si en mode debug
-    if (OPEX_territory_debug) then {
-        private _targetName = if (isNull _target) then {"all"} else {
-            if (typeName _target == "OBJECT") then {name _target} else {"multiple"}
-        };
-        diag_log format ["[TERRITOIRE][SYSCHAT] Envoyé à %1: %2", _targetName, _message];
-    };
-};
-
-// Fonction pour envoyer un message global formalisé
+// Message radio — style [EXPEDITEUR] message
 Gemini_fnc_territoryGlobalChat = {
     params [
-        ["_target", objNull, [objNull, 0, []]],  // Cible (joueur, côté ou array)
-        ["_sender", "QG", [""]],                 // Expéditeur du message (ex: "QG", "Chef", etc.)
-        ["_recipient", "Patrouille", [""]],      // Destinataire (ex: "Patrouille", "Forces", etc.)
-        ["_message", "", [""]]                   // Contenu du message
+        ["_target", objNull, [objNull, 0, []]],
+        ["_sender", "QG", [""]],
+        ["_recipient", "Patrouille", [""]],
+        ["_message", "", [""]]
     ];
-    
-    // Formater le message global
-    private _formattedMessage = format ["%1 à %2: %3", _sender, _recipient, _message];
-    
-    // Envoyer via la fonction globale existante
-    ["globalChat", _formattedMessage] remoteExec ["Gemini_fnc_globalChat", _target];
-    
-    // Log si en mode debug
+
+    private _formattedText = format [
+        "<t size='0.85' color='#00CCCC' shadow='1' align='right'>[%1]</t><br/><t size='0.75' color='#BBBBBB' shadow='1' align='right'>%2</t>",
+        _sender, _message
+    ];
+
+    // x=0.35 bloc large, texte aligne a droite
+    [_formattedText, 0.35, 0.28, 6, 0.3, 0, 701] remoteExec ["BIS_fnc_dynamicText", _target];
+
     if (OPEX_territory_debug) then {
-        private _targetName = if (isNull _target) then {
-            "all"
-        } else {
-            if (typeName _target == "OBJECT") then {
-                name _target
-            } else {
-                "multiple"
-            };
-        };
-        diag_log format ["[TERRITOIRE][NOTIF] Envoyé à %1: %2", _targetName, _message];
+        diag_log format ["[TERRITOIRE][RADIO] [%1 -> %2] %3", _sender, _recipient, _message];
     };
 };
 
-// Fonction complète pour toutes les notifications d'entrée territoire
+// Info secondaire — description chef, infos discretes
+Gemini_fnc_territorySystemChat = {
+    params [
+        ["_target", objNull, [objNull, 0, []]],
+        ["_message", "", [""]]
+    ];
+
+    private _formattedText = format [
+        "<t size='0.75' color='#999999' shadow='1' align='right'>%1</t>",
+        _message
+    ];
+
+    // x=0.35 bloc large, texte aligne a droite
+    [_formattedText, 0.35, 0.38, 5, 0.3, 0, 702] remoteExec ["BIS_fnc_dynamicText", _target];
+
+    if (OPEX_territory_debug) then {
+        diag_log format ["[TERRITOIRE][INFO] %1", _message];
+    };
+};
+
+// Notification d'entree territoire
 Gemini_fnc_territoryEntryNotification = {
     params [
         ["_player", objNull, [objNull]],
@@ -114,68 +102,49 @@ Gemini_fnc_territoryEntryNotification = {
         ["_territoryState", "", [""]],
         ["_forceDisplay", false, [false]]
     ];
-    
-    // Ne rien faire si le joueur est nul
-    if (isNull _player) exitWith {
-        diag_log "[TERRITOIRE][NOTIF] Erreur: Joueur nul pour notification d'entrée";
-    };
-    
-    // Définir titre, message et couleur selon l'état
+
+    if (isNull _player) exitWith {};
+
     private _title = "";
     private _message = "";
     private _type = "info";
-    private _chatMessage = "";
-    
+
     switch (_territoryState) do {
         case "unknown": {
-            _title = format ["TERRITOIRE INCONNU: %1", _territoryName];
-            _message = "Contactez le PC avant d'approcher.";
+            _title = format ["ZONE INCONNUE — %1", _territoryName];
+            _message = "Contactez le PC par radio avant de poursuivre.";
             _type = "warning";
-            _chatMessage = format ["Nous n'avons aucune information sur %1. Contactez le PC pour obtenir des renseignements avant de poursuivre.", _territoryName];
         };
         case "enemy": {
-            _title = format ["TERRITOIRE HOSTILE: %1", _territoryName];
-            _message = "Soyez extrêmement vigilant.";
+            _title = format ["ZONE HOSTILE — %1", _territoryName];
+            _message = "Presence ennemie confirmee. Vigilance maximale.";
             _type = "error";
-            _chatMessage = format ["Attention, vous êtes entré dans un territoire hostile: %1. Restez sur vos gardes.", _territoryName];
         };
         case "neutral": {
-            _title = format ["TERRITOIRE NEUTRE: %1", _territoryName];
-            _message = "Les habitants sont coopératifs mais restez vigilant.";
+            _title = format ["ZONE NEUTRE — %1", _territoryName];
+            _message = "Population cooperative. Restez vigilant.";
             _type = "info";
-            _chatMessage = format ["Vous êtes entré dans le territoire neutre de %1. Les locaux semblent pacifiques, mais restez sur vos gardes.", _territoryName];
         };
         case "friendly": {
-            _title = format ["TERRITOIRE AMI: %1", _territoryName];
-            _message = "Zone sécurisée sous contrôle allié.";
+            _title = format ["ZONE AMIE — %1", _territoryName];
+            _message = "Secteur sous controle allie.";
             _type = "success";
-            _chatMessage = format ["Vous êtes entré dans le territoire ami de %1. Nos forces y assurent la sécurité.", _territoryName];
         };
         default {
-            _title = format ["TERRITOIRE: %1", _territoryName];
+            _title = format ["ZONE — %1", _territoryName];
             _message = "Statut inconnu.";
             _type = "info";
-            _chatMessage = format ["Vous êtes entré dans le territoire %1.", _territoryName];
         };
     };
-    
-    // Envoyer notification visuelle
+
     [_player, _title, _message, _type] call Gemini_fnc_territoryNotification;
-    
-    // Envoyer message system chat
-    [_player, format ["Territoire %1: %2", toLower _territoryState, _territoryName]] call Gemini_fnc_territorySystemChat;
-    
-    // Envoyer message global chat
-    [_player, "QG", "Patrouille", _chatMessage] call Gemini_fnc_territoryGlobalChat;
-    
-    // Logs
+
     if (OPEX_territory_verboseLogging) then {
-        diag_log format ["[TERRITOIRE] Notifications d'entrée envoyées à %1 pour territoire %2 (%3)", 
-            name _player, _territoryName, _territoryState];
+        diag_log format ["[TERRITOIRE] Entree %1 dans %2 (%3)", name _player, _territoryName, _territoryState];
     };
 };
 
-// Fonction complète pour notification de sortie de territoire
+// Notification de sortie territoire
 Gemini_fnc_territoryExitNotification = {
     params [
         ["_player", objNull, [objNull]],
@@ -183,94 +152,61 @@ Gemini_fnc_territoryExitNotification = {
         ["_wasAuthorized", false, [false]],
         ["_wasState", "", [""]]
     ];
-    
-    // Ne rien faire si le joueur est nul
+
     if (isNull _player) exitWith {};
-    
-    // Notification visuelle de sortie
-    [_player, "SORTIE DE ZONE", format ["Vous avez quitté le territoire de %1", _territoryName], "info"] 
+
+    [_player, "SORTIE DE ZONE", format ["Vous avez quitte %1", _territoryName], "info", 3]
         call Gemini_fnc_territoryNotification;
-    
-    // Message simple
-    [_player, format ["Vous avez quitté le territoire: %1", _territoryName]] 
-        call Gemini_fnc_territorySystemChat;
-    
-    // Message spécial si territoire inconnu non-autorisé mais pas pénalisé
-    if (_wasState == "unknown" && !_wasAuthorized && {(_player getVariable ["territoryPenalized", false]) == false}) then {
-        [_player, "QG", "Patrouille", "Bonne décision de vous retirer d'une zone non autorisée. Continuez la mission."] 
-            call Gemini_fnc_territoryGlobalChat;
-    };
-    
-    // Logs
+
     if (OPEX_territory_verboseLogging) then {
-        diag_log format ["[TERRITOIRE] Notifications de sortie envoyées à %1 pour territoire %2", 
-            name _player, _territoryName];
+        diag_log format ["[TERRITOIRE] Sortie %1 de %2", name _player, _territoryName];
     };
 };
 
-// Fonction pour avertissement de pénalité
+// Avertissement de penalite
 Gemini_fnc_territoryPenaltyWarning = {
     params [
         ["_player", objNull, [objNull]],
         ["_territoryName", "", [""]],
         ["_timeInZone", 0, [0]]
     ];
-    
-    private _warningMsg = format ["<t size='1.2' color='#FFA500'>AVERTISSEMENT</t><br/>Vous êtes dans %1 depuis presque 2 minutes sans autorisation.<br/>Faites demi-tour ou contactez le PC pour éviter une pénalité.", _territoryName];
-    [_warningMsg, 0.5, 0.3, OPEX_territory_notif_warning, 0] remoteExec ["BIS_fnc_dynamicText", _player];
-    
-    [_player, format ["AVERTISSEMENT: %1 minute en zone non autorisée. Sanction sur notre réputation imminente.", round(_timeInZone/60)]] 
-        call Gemini_fnc_territorySystemChat;
-    
-    if (OPEX_territory_verboseLogging) then {
-        diag_log format ["[TERRITOIRE] AVERTISSEMENT envoyé à %1 pour présence non autorisée dans %2", 
-            name _player, _territoryName];
-    };
+
+    [_player,
+        "AVERTISSEMENT",
+        format ["Zone %1 — presence non autorisee. Contactez le PC ou faites demi-tour.", _territoryName],
+        "warning", 8
+    ] call Gemini_fnc_territoryNotification;
 };
 
-// Fonction pour notification de pénalité
+// Notification de penalite
 Gemini_fnc_territoryPenaltyNotification = {
     params [
         ["_player", objNull, [objNull]],
         ["_territoryName", "", [""]]
     ];
-    
-    // Notification claire de pénalité
-    private _penaltyMsg = format ["<t size='1.2' color='#FF0000'>PÉNALITÉ</t><br/>Vous avez passé plus de 2 minutes en territoire non autorisé.<br/>Votre réputation a été affectée."];
-    [_penaltyMsg, 0.5, 0.3, OPEX_territory_notif_warning, 0] remoteExec ["BIS_fnc_dynamicText", _player];
-    
-    // Message système
-    [_player, "SANCTION: Trop de temps passé en zone non autorisée. Réputation affectée."] 
-        call Gemini_fnc_territorySystemChat;
-    
-    // Annonce globale à tous les joueurs
-    [0, "QG", "toutes les unités", format ["La patrouille de %1 a pénétré en zone non renseignée sans autorisation.", name _player]] 
-        call Gemini_fnc_territoryGlobalChat;
-    
-    // Log
-    if (OPEX_territory_debug) then {
-        diag_log format ["[TERRITOIRE] PÉNALITÉ appliquée à %1 pour présence prolongée dans %2", 
-            name _player, _territoryName];
-    };
+
+    [_player,
+        "PENALITE",
+        "Presence non autorisee prolongee. Reputation affectee.",
+        "error", 10
+    ] call Gemini_fnc_territoryNotification;
 };
 
-// Fonction pour notification de réception radio
+// Notification radio disponible
 Gemini_fnc_radioAvailableNotification = {
     params [
         ["_player", objNull, [objNull]],
         ["_territoryName", "", [""]]
     ];
-    
-    // Message pour informer de la disponibilité de l'action radio
-    private _message = format ["<t color='#00FF00'>Communication radio disponible</t><br/>Utilisez votre menu d'interaction ACE (par défaut: Windows+T)<br/>pour contacter le PC à propos de %1", _territoryName];
-    [_message, 0.5, 0.4, 8, 1] remoteExec ["BIS_fnc_dynamicText", _player];
-    
-    // Message global également
-    [_player, "QG", name _player, format ["Utilisez votre menu ACE pour nous contacter au sujet de %1.", _territoryName]] 
-        call Gemini_fnc_territoryGlobalChat;
+
+    [_player,
+        "RADIO DISPONIBLE",
+        format ["Menu ACE (Win+T) pour contacter le PC sur %1", _territoryName],
+        "radio", 6
+    ] call Gemini_fnc_territoryNotification;
 };
 
-// Initialiser si c'est exécuté directement
+// Init
 if (isServer && !isNil "OPEX_territoryConfig_initialized") then {
-    diag_log "[TERRITOIRE][COMMS] Système de messagerie territoriale initialisé";
+    diag_log "[TERRITOIRE][COMMS] Systeme de messagerie territoriale initialise";
 };

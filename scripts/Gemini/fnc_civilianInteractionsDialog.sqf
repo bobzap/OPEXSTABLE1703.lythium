@@ -146,12 +146,24 @@ buttonSetAction [_civilian_suspect_drop, format ["[%1, %2] spawn Gemini_fnc_civi
 buttonSetAction [_civilian_suspect_release, format ["[%1, %2] spawn Gemini_fnc_civilianInteractions_suspect_release", _target, _caller]];
 
 
-// CHEF DE VILLAGE - Actions des boutons
-// CHEF DE VILLAGE - Définir les actions des boutons correctement
-// CHEF DE VILLAGE - Définir les actions des boutons correctement
-buttonSetAction [_civilian_chief_missions, format ["closeDialog 0; [%1, %2] call Gemini_fnc_openChiefMissionDialog", _target, _caller]];
-buttonSetAction [_civilian_chief_status, format ["closeDialog 0; [%1, %2] call Gemini_fnc_showTerritoryStatus", _target, _caller]];
-buttonSetAction [_civilian_chief_reputation, format ["closeDialog 0; [%1, %2] call Gemini_fnc_showFactionReputation", _target, _caller]];
+// CHEF DE VILLAGE - Stocker les refs objet pour les boutons
+missionNamespace setVariable ["OPEX_dialog_chief_target", _target];
+missionNamespace setVariable ["OPEX_dialog_chief_caller", _caller];
+
+buttonSetAction [_civilian_chief_missions, "closeDialog 0; [missionNamespace getVariable 'OPEX_dialog_chief_target', missionNamespace getVariable 'OPEX_dialog_chief_caller'] call Gemini_fnc_openChiefMissionDialog"];
+buttonSetAction [_civilian_chief_status, "closeDialog 0; [missionNamespace getVariable 'OPEX_dialog_chief_target', missionNamespace getVariable 'OPEX_dialog_chief_caller'] call Gemini_fnc_showTerritoryStatus"];
+buttonSetAction [_civilian_chief_reputation, "closeDialog 0; [missionNamespace getVariable 'OPEX_dialog_chief_target', missionNamespace getVariable 'OPEX_dialog_chief_caller'] call Gemini_fnc_showFactionReputation"];
+
+// =========================================================================================================
+// INITIALISER LA SECTION CHEF (une seule fois, hors de la boucle)
+// =========================================================================================================
+
+private _isChief = _target getVariable ["isVillageChief", false];
+ctrlShow [_civilian_chief_TITLE, _isChief];
+ctrlShow [_civilian_chief_missions, _isChief];
+ctrlShow [_civilian_chief_status, _isChief];
+ctrlShow [_civilian_chief_reputation, _isChief];
+
 // =========================================================================================================
 // ENABLING/DISABLING CONTROLS
 // =========================================================================================================
@@ -254,21 +266,8 @@ while {dialog} do {
         ctrlEnable [_civilian_conversation_suspicious, true];
     };
 
-    // CHEF DE VILLAGE - Afficher/masquer les options selon le type d'unité
-    if (_target getVariable ["isVillageChief", false]) then {
-        // Afficher les options de chef
-        ctrlShow [_civilian_chief_TITLE, true];
-        ctrlShow [_civilian_chief_missions, true];
-        ctrlShow [_civilian_chief_status, true];
-        ctrlShow [_civilian_chief_reputation, true];
-    } else {
-        // Masquer les options de chef
-        ctrlShow [_civilian_chief_TITLE, false];
-        ctrlShow [_civilian_chief_missions, false];
-        ctrlShow [_civilian_chief_status, false];
-        ctrlShow [_civilian_chief_reputation, false];
-    };
-    
+    // NOTE: La section chef est initialisée UNE FOIS avant la boucle (pas ici)
+
     // Fermer le dialogue si le joueur s'éloigne trop
     if (_target distance _caller > 7.5) then {
         closeDialog 0

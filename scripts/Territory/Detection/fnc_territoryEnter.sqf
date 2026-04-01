@@ -63,16 +63,19 @@ Gemini_fnc_handleTerritoryEnter = {
 
         case "enemy": {
             diag_log "[TERRITOIRE][DEBUG-ENTRÉE] Traitement cas 'enemy'";
-            // Marquer le joueur comme autorisé (territoire déjà identifié comme hostile)
             _player setVariable ["territoryAuthorized", true, true];
 
-            // Proposer une mission via radio après un délai
-            [_player, _territoryIndex] spawn {
-                params ["_player", "_territoryIndex"];
+            // Proposer une mission seulement si pas de mission déjà en cours
+            [_player, _territoryIndex, _territoryName] spawn {
+                params ["_player", "_territoryIndex", "_territoryName"];
                 sleep 5;
 
-                // Proposer une mission si le joueur est toujours dans le territoire
-                if ((_player getVariable ["lastVisitedTerritory", ""]) == ((OPEX_territories select _territoryIndex) select 0)) then {
+                // Vérifier que le joueur est toujours dans ce territoire ET pas de mission active
+                private _stillHere = (_player getVariable ["lastVisitedTerritory", ""]) == _territoryName;
+                private _missionActive = _player getVariable ["OPEX_territory_missionOffered", false];
+
+                if (_stillHere && !_missionActive) then {
+                    _player setVariable ["OPEX_territory_missionOffered", true, true];
                     [_player, _territoryIndex] remoteExec ["Gemini_fnc_offerMissionViaRadio", _player];
                 };
             };
@@ -96,8 +99,7 @@ Gemini_fnc_handleTerritoryEnter = {
                     if (alive _chief) then {
                         private _dirText = _chief getVariable ["chiefDirection", "dans les environs"];
                         private _locText = _chief getVariable ["chiefLocation", "quelque part dans le village"];
-                        private _descMsg = format ["[QG] Le responsable local de %1 se trouverait %2, %3.", _name, _dirText, _locText];
-                        [_descMsg] remoteExec ["systemChat", _player];
+                        [_player, format ["Responsable local de %1 signale %2, %3.", _name, _dirText, _locText]] call Gemini_fnc_territorySystemChat;
                     };
                 };
             };
@@ -119,8 +121,7 @@ Gemini_fnc_handleTerritoryEnter = {
                     if (alive _chief) then {
                         private _dirText = _chief getVariable ["chiefDirection", "dans les environs"];
                         private _locText = _chief getVariable ["chiefLocation", "quelque part dans le village"];
-                        private _descMsg = format ["[QG] Le responsable local de %1 se trouverait %2, %3.", _name, _dirText, _locText];
-                        [_descMsg] remoteExec ["systemChat", _player];
+                        [_player, format ["Responsable local de %1 signale %2, %3.", _name, _dirText, _locText]] call Gemini_fnc_territorySystemChat;
                     };
                 };
             };
